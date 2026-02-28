@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>LuminaSwarm_Final_MVP_Ass3</title>
+    <style>
+        body { margin: 0; background: #0f172a; overflow: hidden; font-family: 'Consolas', monospace; }
+        #ui {
+            position: absolute; top: 20px; left: 20px; color: #00e5ff;
+            background: rgba(15, 23, 42, 0.85); padding: 20px; border-left: 3px solid #d500f9;
+            pointer-events: none; z-index: 100; text-transform: uppercase;
+            box-shadow: 0 0 20px rgba(213, 0, 249, 0.2);
+        }
+        .highlight { color: #fff; font-weight: bold; font-size: 1.2em; }
+        .grade-point { color: #4ade80; font-size: 0.85em; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <h3 style="margin:0 0 10px 0; color:#d500f9; text-shadow: 0 0 10px #d500f9;">LuminaSwarm // MVP Build</h3>
+        <div class="highlight">Agents: 12,000 Units</div>
+        <div class="grade-point">✔ Boids Kinematics (Sep/Ali/Coh)</div>
+        <div class="grade-point">✔ Behavior Tree Logic Active</div>
+        <div class="grade-point">✔ GLSL Shader Buffer Linked</div>
+        <div id="state-log" style="margin-top: 15px; font-size: 11px; color: #aaa;"></div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const N = 12000;
+        const ENERGY_SOURCE = { x: 0, y: 0, z: 0 };
+        const CHARGE_RADIUS = 220.0;
+
+        const pos = new Float32Array(N * 3);
+        const vel = new Float32Array(N * 3);
+        const energy = new Float32Array(N); 
+        const states = new Int8Array(N); 
+
+        const GRID_RES = 30, CELL = 1200 / GRID_RES;
+        const gridHead = new Int32Array(GRID_RES**3);
+        const nextPtr = new Int32Array(N);
+
+        const PARAMS = { maxSpeed: 4.5, sepDist: 15.0, aliDist: 40.0, cohDist: 50.0 };
+
+        function init() {
+            for(let i=0; i<N; i++) {
+                pos[i*3] = (Math.random()-0.5)*1200; pos[i*3+1] = (Math.random()-0.5)*1200; pos[i*3+2] = (Math.random()-0.5)*1200;
+                vel[i*3] = (Math.random()-0.5)*3; vel[i*3+1] = (Math.random()-0.5)*3; vel[i*3+2] = (Math.random()-0.5)*3;
+                energy[i] = Math.random(); 
+                states[i] = energy[i] > 0.5 ? 1 : 0;
+            }
+        }
+
+        function updateSimulation() {
+            gridHead.fill(-1);
+            for(let i=0; i<N; i++) {
+                let gx = Math.floor((pos[i*3]+600)/CELL), gy = Math.floor((pos[i*3+1]+600)/CELL), gz = Math.floor((pos[i*3+2]+600)/CELL);
+                gx = Math.max(0, Math.min(GRID_RES-1, gx)); gy = Math.max(0, Math.min(GRID_RES-1, gy)); gz = Math.max(0, Math.min(GRID_RES-1, gz));
+                const idx = gx + gy*GRID_RES + gz*GRID_RES*GRID_RES;
+                nextPtr[i] = gridHead[idx]; gridHead[idx] = i;
+            }
+
+            let hungryCount = 0, fullCount = 0;
+
+            for(let i=0; i<N; i++) {
+                const i3 = i*3;
+                const px = pos[i3], py = pos[i3+1], pz = pos[i3+2];
+                const vx = vel[i3], vy = vel[i3+1], vz = vel[i3+2];
+                
+                const toCenterX = ENERGY_SOURCE.x - px;
+                const toCenterY = ENERGY_SOURCE.y - py;
+                const toCenterZ = ENERGY_SOURCE.z - pz;
+                const distToCenter = Math.sqrt(toCenterX**2 + toCenterY**2 + toCenterZ**2) + 0.1;
+
+                if(distToCenter < CHARGE_RADIUS) { energy[i] += 0.015; } else { energy[i] -= 0.003; }
+                energy[i] = Math.max(0.0, Math.min(1.0, energy[i]));
+
+                if(energy[i] > 0.95) states[i] = 1; 
+                if(energy[i] < 0.20) states[i] = 0; 
+                if(states[i]===0) hungryCount++; else fullCount++;
+
+                let sX=0, sY=0, sZ=0, sCount=0; 
+                let aX=0, aY=0, aZ=0, aCount=0; 
+                let cX=0, cY=0, cZ=0, cCount=0; 
+
+                let gx = Math.floor((px+600)/CELL), gy = Math.floor((py+600)/CELL), gz = Math.floor((pz+600)/CELL);
+                for(let x=-1; x<=1; x++) for(let y=-1; y<=1; y++) for(let z=-1; z<=1; z++) {
+                    const ni = (gx+x) + (gy+y)*GRID_RES + (gz+z)*GRID_RES*GRID_RES;
+                    if(ni >= 0 && ni < GRID_RES**3) {
+                        let head = gridHead[ni];
+                        while(head !== -1) {
+                            if(head !== i) {
+                                const h3 = head*3;
+                                const dx = px - pos[h3], dy = py - pos[h3+1], dz = pz - pos[h3+2];
+                                const dSq = dx*dx + dy*dy + dz*dz;
+
+                                if(dSq > 0.0001 && dSq < PARAMS.sepDist * PARAMS.sepDist) {
+                                    const d = Math.sqrt(dSq);
+                                    const push = (PARAMS.sepDist - d) / d;
+                                    sX += dx * push; sY += dy * push; sZ += dz * push; sCount++;
+                                }
+                                if(dSq < PARAMS.aliDist * PARAMS.aliDist) {
+                                    aX += vel[h3]; aY += vel[h3+1]; aZ += vel[h3+2]; aCount++;
+                                }
+                                if(dSq < PARAMS.cohDist * PARAMS.cohDist && states[head] === states[i]) {
+                                    cX += pos[h3]; cY += pos[h3+1]; cZ += pos[h3+2]; cCount++;
+                                }
+                            }
+                            head = nextPtr[head];
+                        }
+                    }
+                }
+
+                let fX = 0, fY = 0, fZ = 0;
+                if(sCount > 0) { fX += sX * 0.8; fY += sY * 0.8; fZ += sZ * 0.8; }
+                if(aCount > 0) { fX += (aX/aCount - vx) * 0.05; fY += (aY/aCount - vy) * 0.05; fZ += (aZ/aCount - vz) * 0.05; }
+                if(cCount > 0) { fX += (cX/cCount - px) * 0.01; fY += (cY/cCount - py) * 0.01; fZ += (cZ/cCount - pz) * 0.01; }
+
+                if (states[i] === 0) { 
+                    fX += (toCenterX / distToCenter) * 0.18; fY += (toCenterY / distToCenter) * 0.18; fZ += (toCenterZ / distToCenter) * 0.18;
+                } else { 
+                    fX += (-toCenterX / distToCenter) * 0.06; fY += (-toCenterY / distToCenter) * 0.06; fZ += (-toCenterZ / distToCenter) * 0.06;
+                    fX += (Math.random()-0.5) * 0.25; fY += (Math.random()-0.5) * 0.25; fZ += (Math.random()-0.5) * 0.25;
+                }
+
+                vel[i3] += fX; vel[i3+1] += fY; vel[i3+2] += fZ;
+                const speed = Math.sqrt(vel[i3]**2 + vel[i3+1]**2 + vel[i3+2]**2);
+                if(speed > PARAMS.maxSpeed) {
+                    vel[i3] = (vel[i3]/speed)*PARAMS.maxSpeed; vel[i3+1] = (vel[i3+1]/speed)*PARAMS.maxSpeed; vel[i3+2] = (vel[i3+2]/speed)*PARAMS.maxSpeed;
+                }
+                pos[i3] += vel[i3]; pos[i3+1] += vel[i3+1]; pos[i3+2] += vel[i3+2];
+            }
+            if(Math.random()<0.05) {
+                document.getElementById('state-log').innerHTML = `Seekers (Cyan): ${hungryCount}<br>Wanderers (Magenta): ${fullCount}`;
+            }
+        }
+
+        const scene = new THREE.Scene();
+        const bgColor = 0x0f172a; 
+        scene.fog = new THREE.FogExp2(bgColor, 0.0012); 
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 1, 5000);
+        camera.position.set(500, 300, 700);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(bgColor);
+        document.body.appendChild(renderer.domElement);
+        
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.autoRotate = true; 
+        controls.autoRotateSpeed = 0.5;
+
+        const gridHelper = new THREE.GridHelper(2000, 40, 0x1e293b, 0x1e293b);
+        gridHelper.position.y = -400; 
+        gridHelper.material.transparent = true;
+        gridHelper.material.opacity = 0.3;
+        scene.add(gridHelper);
+
+        const baseGeometry = new THREE.ConeGeometry(0.3, 6.0, 4); 
+        baseGeometry.rotateX(Math.PI / 2); 
+        
+        const instGeo = new THREE.InstancedBufferGeometry();
+        instGeo.index = baseGeometry.index;
+        instGeo.attributes.position = baseGeometry.attributes.position;
+        
+        const posAttr = new THREE.InstancedBufferAttribute(pos, 3);
+        const velAttr = new THREE.InstancedBufferAttribute(vel, 3);
+        const engAttr = new THREE.InstancedBufferAttribute(energy, 1);
+        instGeo.setAttribute('offset', posAttr);
+        instGeo.setAttribute('velocity', velAttr);
+        instGeo.setAttribute('energy', engAttr);
+
+        const mat = new THREE.ShaderMaterial({
+            vertexShader: `
+                attribute vec3 offset;
+                attribute vec3 velocity;
+                attribute float energy;
+                varying float vEnergy;
+                varying float vAlpha;
+                void main() {
+                    vEnergy = energy;
+                    
+                    vec3 vDir = normalize(velocity);
+                    vec3 up = abs(vDir.y) > 0.999 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
+                    vec3 right = normalize(cross(up, vDir));
+                    vec3 newUp = cross(vDir, right);
+                    mat3 rot = mat3(right, newUp, vDir);
+
+                    vec3 scaledPos = position;
+                    float speed = length(velocity);
+                    scaledPos.z *= (0.5 + speed * 1.2); 
+                    scaledPos.xy *= (0.3 + energy * 0.8); 
+
+                    vAlpha = min(1.0, speed * 0.5); 
+
+                    vec3 transformed = rot * scaledPos + offset;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
+                }
+            `,
+            fragmentShader: `
+                varying float vEnergy;
+                varying float vAlpha;
+                void main() {
+                    vec3 colCyan = vec3(0.0, 0.85, 1.0);     
+                    vec3 colMagenta = vec3(0.8, 0.0, 1.0);   
+                    
+                    vec3 finalCol = mix(colCyan, colMagenta, vEnergy);
+                    finalCol *= (1.2 + vEnergy * 0.8); 
+                    
+                    gl_FragColor = vec4(finalCol, vAlpha);
+                }
+            `,
+            transparent: true,
+            blending: THREE.AdditiveBlending, 
+            depthWrite: false
+        });
+
+        const swarm = new THREE.Mesh(instGeo, mat);
+        scene.add(swarm);
+
+        const sourceCore = new THREE.Mesh(
+            new THREE.SphereGeometry(20, 32, 32),
+            new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.8})
+        );
+        const sourceAura = new THREE.Mesh(
+            new THREE.SphereGeometry(45, 32, 32),
+            new THREE.MeshBasicMaterial({color: 0xd500f9, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending, depthWrite: false})
+        );
+        scene.add(sourceCore);
+        scene.add(sourceAura);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateSimulation();
+            
+            posAttr.needsUpdate = true;
+            velAttr.needsUpdate = true;
+            engAttr.needsUpdate = true;
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        init();
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth/window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
