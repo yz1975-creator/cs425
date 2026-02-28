@@ -1,33 +1,27 @@
-cs425
-luminaswarm
-midterm report
+LuminaSwarm (Group 2) - Assignment 3 MVP
 
-Project Links:
-- Repo: [Insert Link]
-- WebGL Build: [Insert Link]
-- Video: [Insert Link]
+Group Members: Bryan Shangguan (netID: bys8), Yijia Zhang (netID: yz1975)
 
-PLAN VS REALITY
+Overview
+This is the Assignment 3 MVP build for LuminaSwarm. It implements a state-driven swarm simulation navigating towards a static energy source. The project demonstrates our core pillars: Swarm and Boids Modeling, and NPC AI / Behavior Trees.
 
-Features from Assignment 2 MVP implemented:
-- 3D Boids algorithm (Separation, Alignment, Cohesion) is functional.
-- Behavior Tree is implemented. Agents transition between Seek (hungry) and Wander (full) states based on distance to the center.
-- GLSL shaders for energy visualization are working. High-level logic passes data via Float32Arrays to the GPU to change agent colors.
-- We scaled the simulation to 12,000 agents at 60fps using a Spatial Hash Grid and Structure of Arrays (SoA).
+Build and Run Instructions
+This project is built using vanilla JavaScript (ES6 Modules) and Three.js via CDN. It does not require Node.js, Webpack, or any local build tools.
 
-Features cut or changed:
-- Cut: Dynamic vector field environment.
-- Reason: Combining external vector field forces with Boids separation/cohesion caused "potential well deadlocks." Agents got stuck in static rings and stopped moving. We changed it to a single static energy source to ensure the swarm keeps flying.
+Option 1: Live WebGL Build
+You can view the live simulation directly in your browser here:
+[在此处填入你的 GitHub Pages 链接, 例如: https://yz1975-creator.github.io/cs425/]
 
-USE OF AI
+Option 2: Run Locally
+Clone or download this repository as a ZIP file. Extract the files to your local machine. Simply double-click index.html to open it in any modern web browser (Chrome, Edge, Safari). Note that an active internet connection is required to fetch the Three.js library from the unpkg CDN.
 
-Usefulness of AI tools:
-- Helpful: Used LLM to generate Three.js boilerplate code, SoA memory layouts, and basic GLSL syntax. It saved time on API lookups.
-- Unhelpful: AI was bad at debugging physics math. When we had the deadlock issue, AI generated flawed formulas that made particles freeze. We had to manually debug the cross-product math and adjust the Boids weights ourselves, which took much longer than expected.
+Controls
+Left Click and Drag to rotate the camera.
+Scroll Wheel to zoom in and out.
+Right Click and Drag to pan the camera.
 
-MAP TO FINAL
-
-Remaining tasks for final submission:
-- Implement multiple Energy Sources and Sinks instead of just one.
-- Add GUI controls for users to dynamically adjust flocking weights and gravity.
-- Add WebGL post-processing (e.g., trail persistence and bloom effects).
+Features Implemented
+12,000 Agents: Scaled well beyond the 2,000 target using a Spatial Hash Grid and Structure of Arrays.
+Boids Algorithm: Custom kinematics for Separation, Alignment, and Cohesion.
+Behavior Tree: Agents dynamically switch between Seeker and Wanderer states based on their distance to the energy source.
+GLSL Shaders: High-level behavior states are linked to GPU buffers to drive real-time velocity alignment and color rendering (Cyan for Seekers, Magenta for Wanderers).
