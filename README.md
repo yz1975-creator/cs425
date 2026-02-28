@@ -10,7 +10,7 @@ This project is built using vanilla JavaScript (ES6 Modules) and Three.js via CD
 
 Option 1: Live WebGL Build
 You can view the live simulation directly in your browser here:
-[在此处填入你的 GitHub Pages 链接, 例如: https://yz1975-creator.github.io/cs425/]
+(https://yz1975-creator.github.io/cs425/)
 
 Option 2: Run Locally
 Clone or download this repository as a ZIP file. Extract the files to your local machine. Simply double-click index.html to open it in any modern web browser (Chrome, Edge, Safari). Note that an active internet connection is required to fetch the Three.js library from the unpkg CDN.
