@@ -1,267 +1,760 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <title>LuminaSwarm_Final_MVP_Ass3</title>
-    <style>
-        body { margin: 0; background: #0f172a; overflow: hidden; font-family: 'Consolas', monospace; }
-        #ui {
-            position: absolute; top: 20px; left: 20px; color: #00e5ff;
-            background: rgba(15, 23, 42, 0.85); padding: 20px; border-left: 3px solid #d500f9;
-            pointer-events: none; z-index: 100; text-transform: uppercase;
-            box-shadow: 0 0 20px rgba(213, 0, 249, 0.2);
-        }
-        .highlight { color: #fff; font-weight: bold; font-size: 1.2em; }
-        .grade-point { color: #4ade80; font-size: 0.85em; margin-top: 5px; }
-    </style>
-</head>
-<body>
-    <div id="ui">
-        <h3 style="margin:0 0 10px 0; color:#d500f9; text-shadow: 0 0 10px #d500f9;">LuminaSwarm // MVP Build</h3>
-        <div class="highlight">Agents: 12,000 Units</div>
-        <div class="grade-point">✔ Boids Kinematics (Sep/Ali/Coh)</div>
-        <div class="grade-point">✔ Behavior Tree Logic Active</div>
-        <div class="grade-point">✔ GLSL Shader Buffer Linked</div>
-        <div id="state-log" style="margin-top: 15px; font-size: 11px; color: #aaa;"></div>
-    </div>
+	<head>
+		<meta charset="UTF-8" />
+		<title>LuminaSwarm_Final_MVP_Ass4</title>
+		<style>
+			body {
+				margin: 0;
+				background: #0f172a;
+				overflow: hidden;
+				font-family: "Consolas", monospace;
+			}
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
+			/* Overlay Containers */
+			.overlay {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100vw;
+				height: 100vh;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				background: rgba(15, 23, 42, 0.7);
+				backdrop-filter: blur(5px);
+				z-index: 200;
+				transition: opacity 0.5s;
+			}
+			.hidden {
+				display: none !important;
+				opacity: 0;
+				pointer-events: none;
+			}
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+			/* Main Menu */
+			#main-menu h1 {
+				color: #d500f9;
+				font-size: 4em;
+				text-shadow: 0 0 20px #d500f9;
+				margin-bottom: 10px;
+				text-transform: uppercase;
+				letter-spacing: 5px;
+				text-align: center;
+			}
+			#main-menu p {
+				color: #00e5ff;
+				font-size: 1.2em;
+				margin-bottom: 40px;
+				text-shadow: 0 0 10px #00e5ff;
+				text-align: center;
+			}
 
-        const N = 12000;
-        const ENERGY_SOURCE = { x: 0, y: 0, z: 0 };
-        const CHARGE_RADIUS = 220.0;
+			/* End Screen */
+			#end-screen h1 {
+				font-size: 4em;
+				margin-bottom: 10px;
+				text-transform: uppercase;
+				text-align: center;
+			}
+			#end-screen.win h1 {
+				color: #4ade80;
+				text-shadow: 0 0 20px #4ade80;
+			}
+			#end-screen.loss h1 {
+				color: #ef4444;
+				text-shadow: 0 0 20px #ef4444;
+			}
+			#end-screen p {
+				color: #fff;
+				font-size: 1.2em;
+				margin-bottom: 40px;
+				text-align: center;
+			}
 
-        const pos = new Float32Array(N * 3);
-        const vel = new Float32Array(N * 3);
-        const energy = new Float32Array(N); 
-        const states = new Int8Array(N); 
+			/* Buttons */
+			button {
+				background: rgba(213, 0, 249, 0.2);
+				border: 2px solid #d500f9;
+				color: #fff;
+				padding: 15px 40px;
+				font-size: 1.5em;
+				font-family: "Consolas", monospace;
+				cursor: pointer;
+				text-transform: uppercase;
+				transition: all 0.3s;
+				box-shadow: 0 0 15px rgba(213, 0, 249, 0.4);
+			}
+			button:hover {
+				background: #d500f9;
+				color: #fff;
+				box-shadow: 0 0 30px #d500f9;
+				transform: scale(1.05);
+			}
 
-        const GRID_RES = 30, CELL = 1200 / GRID_RES;
-        const gridHead = new Int32Array(GRID_RES**3);
-        const nextPtr = new Int32Array(N);
+			/* HUD */
+			#hud {
+				position: absolute;
+				top: 20px;
+				left: 20px;
+				color: #00e5ff;
+				background: rgba(15, 23, 42, 0.85);
+				padding: 20px;
+				border-left: 3px solid #d500f9;
+				pointer-events: none;
+				z-index: 100;
+				text-transform: uppercase;
+				box-shadow: 0 0 20px rgba(213, 0, 249, 0.2);
+				transition: opacity 0.5s;
+				width: 280px;
+			}
+			.highlight {
+				color: #fff;
+				font-weight: bold;
+				font-size: 1.2em;
+			}
+			.grade-point {
+				color: #4ade80;
+				font-size: 0.85em;
+				margin-top: 5px;
+			}
 
-        const PARAMS = { maxSpeed: 4.5, sepDist: 15.0, aliDist: 40.0, cohDist: 50.0 };
+			/* Timer Bar */
+			#timer-container {
+				width: 100%;
+				height: 10px;
+				background: #333;
+				margin-top: 15px;
+				border-radius: 5px;
+				overflow: hidden;
+			}
+			#timer-bar {
+				width: 100%;
+				height: 100%;
+				background: #00e5ff;
+				transition:
+					width 0.1s,
+					background-color 0.3s;
+			}
+			.timer-warning {
+				background: #ef4444 !important;
+				box-shadow: 0 0 10px #ef4444;
+			}
+			.timer-warning-text {
+				color: #ef4444 !important;
+				text-shadow: 0 0 5px #ef4444;
+			}
+		</style>
+	</head>
+	<body>
+		<!-- Main Menu -->
+		<div id="main-menu" class="overlay">
+			<h1>LuminaSwarm</h1>
+			<p>Interactive MVP 2.0</p>
+			<div
+				style="
+					color: #aaa;
+					margin-bottom: 30px;
+					text-align: center;
+					line-height: 1.5;
+				"
+			>
+				Use <strong style="color: #fff">WASD</strong> to move the Energy
+				Source.<br />
+				Feed 90% of the swarm for 5 seconds to win.<br />
+				You have 60 seconds.
+			</div>
+			<button id="start-btn">Start</button>
+		</div>
 
-        function init() {
-            for(let i=0; i<N; i++) {
-                pos[i*3] = (Math.random()-0.5)*1200; pos[i*3+1] = (Math.random()-0.5)*1200; pos[i*3+2] = (Math.random()-0.5)*1200;
-                vel[i*3] = (Math.random()-0.5)*3; vel[i*3+1] = (Math.random()-0.5)*3; vel[i*3+2] = (Math.random()-0.5)*3;
-                energy[i] = Math.random(); 
-                states[i] = energy[i] > 0.5 ? 1 : 0;
-            }
-        }
+		<!-- End Screen -->
+		<div id="end-screen" class="overlay hidden">
+			<h1 id="end-title">Swarm Synthesized!</h1>
+			<p id="end-subtitle">Simulation Complete.</p>
+			<button id="restart-btn">Main Menu</button>
+		</div>
 
-        function updateSimulation() {
-            gridHead.fill(-1);
-            for(let i=0; i<N; i++) {
-                let gx = Math.floor((pos[i*3]+600)/CELL), gy = Math.floor((pos[i*3+1]+600)/CELL), gz = Math.floor((pos[i*3+2]+600)/CELL);
-                gx = Math.max(0, Math.min(GRID_RES-1, gx)); gy = Math.max(0, Math.min(GRID_RES-1, gy)); gz = Math.max(0, Math.min(GRID_RES-1, gz));
-                const idx = gx + gy*GRID_RES + gz*GRID_RES*GRID_RES;
-                nextPtr[i] = gridHead[idx]; gridHead[idx] = i;
-            }
+		<!-- HUD -->
+		<div id="hud" class="hidden">
+			<h3
+				style="
+					margin: 0 0 10px 0;
+					color: #d500f9;
+					text-shadow: 0 0 10px #d500f9;
+				"
+			>
+				LuminaSwarm HUD
+			</h3>
+			<div class="highlight">Agents: 12,000 Units</div>
+			<div class="grade-point">Goal: 90% fed for 5s</div>
+			<div
+				id="time-text"
+				style="margin-top: 15px; font-weight: bold; font-size: 1.2em"
+			>
+				Time: 60.0s
+			</div>
+			<div id="timer-container"><div id="timer-bar"></div></div>
+			<div
+				id="state-log"
+				style="margin-top: 15px; font-size: 11px; color: #aaa"
+			></div>
+			<div
+				id="win-progress"
+				style="
+					margin-top: 10px;
+					font-size: 11px;
+					color: #4ade80;
+					font-weight: bold;
+				"
+			></div>
+		</div>
 
-            let hungryCount = 0, fullCount = 0;
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+					"three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+				}
+			}
+		</script>
 
-            for(let i=0; i<N; i++) {
-                const i3 = i*3;
-                const px = pos[i3], py = pos[i3+1], pz = pos[i3+2];
-                const vx = vel[i3], vy = vel[i3+1], vz = vel[i3+2];
-                
-                const toCenterX = ENERGY_SOURCE.x - px;
-                const toCenterY = ENERGY_SOURCE.y - py;
-                const toCenterZ = ENERGY_SOURCE.z - pz;
-                const distToCenter = Math.sqrt(toCenterX**2 + toCenterY**2 + toCenterZ**2) + 0.1;
+		<script type="module">
+			import * as THREE from "three";
+			import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-                if(distToCenter < CHARGE_RADIUS) { energy[i] += 0.015; } else { energy[i] -= 0.003; }
-                energy[i] = Math.max(0.0, Math.min(1.0, energy[i]));
+			const N = 12000;
+			const ENERGY_SOURCE = { x: 0, y: 0, z: 0 };
+			const CHARGE_RADIUS = 220.0;
 
-                if(energy[i] > 0.95) states[i] = 1; 
-                if(energy[i] < 0.20) states[i] = 0; 
-                if(states[i]===0) hungryCount++; else fullCount++;
+			const pos = new Float32Array(N * 3);
+			const vel = new Float32Array(N * 3);
+			const energy = new Float32Array(N);
+			const states = new Int8Array(N);
 
-                let sX=0, sY=0, sZ=0, sCount=0; 
-                let aX=0, aY=0, aZ=0, aCount=0; 
-                let cX=0, cY=0, cZ=0, cCount=0; 
+			const GRID_RES = 30,
+				CELL = 1200 / GRID_RES;
+			const gridHead = new Int32Array(GRID_RES ** 3);
+			const nextPtr = new Int32Array(N);
 
-                let gx = Math.floor((px+600)/CELL), gy = Math.floor((py+600)/CELL), gz = Math.floor((pz+600)/CELL);
-                for(let x=-1; x<=1; x++) for(let y=-1; y<=1; y++) for(let z=-1; z<=1; z++) {
-                    const ni = (gx+x) + (gy+y)*GRID_RES + (gz+z)*GRID_RES*GRID_RES;
-                    if(ni >= 0 && ni < GRID_RES**3) {
-                        let head = gridHead[ni];
-                        while(head !== -1) {
-                            if(head !== i) {
-                                const h3 = head*3;
-                                const dx = px - pos[h3], dy = py - pos[h3+1], dz = pz - pos[h3+2];
-                                const dSq = dx*dx + dy*dy + dz*dz;
+			const PARAMS = {
+				maxSpeed: 4.5,
+				sepDist: 15.0,
+				aliDist: 40.0,
+				cohDist: 50.0,
+			};
 
-                                if(dSq > 0.0001 && dSq < PARAMS.sepDist * PARAMS.sepDist) {
-                                    const d = Math.sqrt(dSq);
-                                    const push = (PARAMS.sepDist - d) / d;
-                                    sX += dx * push; sY += dy * push; sZ += dz * push; sCount++;
-                                }
-                                if(dSq < PARAMS.aliDist * PARAMS.aliDist) {
-                                    aX += vel[h3]; aY += vel[h3+1]; aZ += vel[h3+2]; aCount++;
-                                }
-                                if(dSq < PARAMS.cohDist * PARAMS.cohDist && states[head] === states[i]) {
-                                    cX += pos[h3]; cY += pos[h3+1]; cZ += pos[h3+2]; cCount++;
-                                }
-                            }
-                            head = nextPtr[head];
-                        }
-                    }
-                }
+			// Game State Variables
+			let currentGameState = "MENU"; // 'MENU', 'PLAYING', 'WIN', 'LOSS'
+			let gameTimeLeft = 60.0;
+			let winConditionTimer = 0.0;
+			const keysDown = new Set();
+			let lastTime = performance.now();
 
-                let fX = 0, fY = 0, fZ = 0;
-                if(sCount > 0) { fX += sX * 0.8; fY += sY * 0.8; fZ += sZ * 0.8; }
-                if(aCount > 0) { fX += (aX/aCount - vx) * 0.05; fY += (aY/aCount - vy) * 0.05; fZ += (aZ/aCount - vz) * 0.05; }
-                if(cCount > 0) { fX += (cX/cCount - px) * 0.01; fY += (cY/cCount - py) * 0.01; fZ += (cZ/cCount - pz) * 0.01; }
+			// UI Elements
+			const elMainMenu = document.getElementById("main-menu");
+			const elEndScreen = document.getElementById("end-screen");
+			const elHud = document.getElementById("hud");
+			const elEndTitle = document.getElementById("end-title");
+			const elEndSubtitle = document.getElementById("end-subtitle");
+			const elTimerBar = document.getElementById("timer-bar");
+			const elTimeText = document.getElementById("time-text");
+			const elStateLog = document.getElementById("state-log");
+			const elWinProgress = document.getElementById("win-progress");
 
-                if (states[i] === 0) { 
-                    fX += (toCenterX / distToCenter) * 0.18; fY += (toCenterY / distToCenter) * 0.18; fZ += (toCenterZ / distToCenter) * 0.18;
-                } else { 
-                    fX += (-toCenterX / distToCenter) * 0.06; fY += (-toCenterY / distToCenter) * 0.06; fZ += (-toCenterZ / distToCenter) * 0.06;
-                    fX += (Math.random()-0.5) * 0.25; fY += (Math.random()-0.5) * 0.25; fZ += (Math.random()-0.5) * 0.25;
-                }
+			// Input Listeners
+			window.addEventListener("keydown", (e) =>
+				keysDown.add(e.key.toLowerCase()),
+			);
+			window.addEventListener("keyup", (e) =>
+				keysDown.delete(e.key.toLowerCase()),
+			);
 
-                vel[i3] += fX; vel[i3+1] += fY; vel[i3+2] += fZ;
-                const speed = Math.sqrt(vel[i3]**2 + vel[i3+1]**2 + vel[i3+2]**2);
-                if(speed > PARAMS.maxSpeed) {
-                    vel[i3] = (vel[i3]/speed)*PARAMS.maxSpeed; vel[i3+1] = (vel[i3+1]/speed)*PARAMS.maxSpeed; vel[i3+2] = (vel[i3+2]/speed)*PARAMS.maxSpeed;
-                }
-                pos[i3] += vel[i3]; pos[i3+1] += vel[i3+1]; pos[i3+2] += vel[i3+2];
-            }
-            if(Math.random()<0.05) {
-                document.getElementById('state-log').innerHTML = `Seekers (Cyan): ${hungryCount}<br>Wanderers (Magenta): ${fullCount}`;
-            }
-        }
+			document
+				.getElementById("start-btn")
+				.addEventListener("click", (e) => {
+					e.stopPropagation();
+					startGame();
+				});
+			document
+				.getElementById("restart-btn")
+				.addEventListener("click", (e) => {
+					e.stopPropagation();
+					currentGameState = "MENU";
+					elEndScreen.classList.add("hidden");
+					elMainMenu.classList.remove("hidden");
 
-        const scene = new THREE.Scene();
-        const bgColor = 0x0f172a; 
-        scene.fog = new THREE.FogExp2(bgColor, 0.0012); 
-        
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 1, 5000);
-        camera.position.set(500, 300, 700);
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(bgColor);
-        document.body.appendChild(renderer.domElement);
-        
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.autoRotate = true; 
-        controls.autoRotateSpeed = 0.5;
+					// Re-enable cinematic rotation on menu
+					controls.autoRotate = true;
+				});
 
-        const gridHelper = new THREE.GridHelper(2000, 40, 0x1e293b, 0x1e293b);
-        gridHelper.position.y = -400; 
-        gridHelper.material.transparent = true;
-        gridHelper.material.opacity = 0.3;
-        scene.add(gridHelper);
+			// Prevent click-through on UI overlays
+			elMainMenu.addEventListener("mousedown", (e) =>
+				e.stopPropagation(),
+			);
+			elEndScreen.addEventListener("mousedown", (e) =>
+				e.stopPropagation(),
+			);
 
-        const baseGeometry = new THREE.ConeGeometry(0.3, 6.0, 4); 
-        baseGeometry.rotateX(Math.PI / 2); 
-        
-        const instGeo = new THREE.InstancedBufferGeometry();
-        instGeo.index = baseGeometry.index;
-        instGeo.attributes.position = baseGeometry.attributes.position;
-        
-        const posAttr = new THREE.InstancedBufferAttribute(pos, 3);
-        const velAttr = new THREE.InstancedBufferAttribute(vel, 3);
-        const engAttr = new THREE.InstancedBufferAttribute(energy, 1);
-        instGeo.setAttribute('offset', posAttr);
-        instGeo.setAttribute('velocity', velAttr);
-        instGeo.setAttribute('energy', engAttr);
+			function initData() {
+				for (let i = 0; i < N; i++) {
+					pos[i * 3] = (Math.random() - 0.5) * 1200;
+					pos[i * 3 + 1] = (Math.random() - 0.5) * 1200;
+					pos[i * 3 + 2] = (Math.random() - 0.5) * 1200;
+					vel[i * 3] = (Math.random() - 0.5) * 3;
+					vel[i * 3 + 1] = (Math.random() - 0.5) * 3;
+					vel[i * 3 + 2] = (Math.random() - 0.5) * 3;
+					energy[i] = Math.random();
+					states[i] = energy[i] > 0.5 ? 1 : 0;
+				}
+			}
 
-        const mat = new THREE.ShaderMaterial({
-            vertexShader: `
-                attribute vec3 offset;
-                attribute vec3 velocity;
-                attribute float energy;
-                varying float vEnergy;
-                varying float vAlpha;
-                void main() {
-                    vEnergy = energy;
-                    
-                    vec3 vDir = normalize(velocity);
-                    vec3 up = abs(vDir.y) > 0.999 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
-                    vec3 right = normalize(cross(up, vDir));
-                    vec3 newUp = cross(vDir, right);
-                    mat3 rot = mat3(right, newUp, vDir);
+			const scene = new THREE.Scene();
+			const bgColor = 0x0f172a;
+			scene.fog = new THREE.FogExp2(bgColor, 0.0012);
 
-                    vec3 scaledPos = position;
-                    float speed = length(velocity);
-                    scaledPos.z *= (0.5 + speed * 1.2); 
-                    scaledPos.xy *= (0.3 + energy * 0.8); 
+			const camera = new THREE.PerspectiveCamera(
+				60,
+				window.innerWidth / window.innerHeight,
+				1,
+				5000,
+			);
+			camera.position.set(500, 300, 700);
 
-                    vAlpha = min(1.0, speed * 0.5); 
+			const renderer = new THREE.WebGLRenderer({
+				antialias: true,
+				powerPreference: "high-performance",
+			});
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			renderer.setClearColor(bgColor);
+			document.body.appendChild(renderer.domElement);
 
-                    vec3 transformed = rot * scaledPos + offset;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
-                }
-            `,
-            fragmentShader: `
-                varying float vEnergy;
-                varying float vAlpha;
-                void main() {
-                    vec3 colCyan = vec3(0.0, 0.85, 1.0);     
-                    vec3 colMagenta = vec3(0.8, 0.0, 1.0);   
-                    
-                    vec3 finalCol = mix(colCyan, colMagenta, vEnergy);
-                    finalCol *= (1.2 + vEnergy * 0.8); 
-                    
-                    gl_FragColor = vec4(finalCol, vAlpha);
-                }
-            `,
-            transparent: true,
-            blending: THREE.AdditiveBlending, 
-            depthWrite: false
-        });
+			const controls = new OrbitControls(camera, renderer.domElement);
+			controls.enableDamping = true;
+			controls.autoRotate = true;
+			controls.autoRotateSpeed = 0.5;
 
-        const swarm = new THREE.Mesh(instGeo, mat);
-        scene.add(swarm);
+			// Visuals
+			const gridHelper = new THREE.GridHelper(
+				2000,
+				40,
+				0x1e293b,
+				0x1e293b,
+			);
+			gridHelper.position.y = -400;
+			gridHelper.material.transparent = true;
+			gridHelper.material.opacity = 0.3;
+			scene.add(gridHelper);
 
-        const sourceCore = new THREE.Mesh(
-            new THREE.SphereGeometry(20, 32, 32),
-            new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.8})
-        );
-        const sourceAura = new THREE.Mesh(
-            new THREE.SphereGeometry(45, 32, 32),
-            new THREE.MeshBasicMaterial({color: 0xd500f9, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending, depthWrite: false})
-        );
-        scene.add(sourceCore);
-        scene.add(sourceAura);
+			const baseGeometry = new THREE.ConeGeometry(0.3, 6.0, 4);
+			baseGeometry.rotateX(Math.PI / 2);
 
-        function animate() {
-            requestAnimationFrame(animate);
-            updateSimulation();
-            
-            posAttr.needsUpdate = true;
-            velAttr.needsUpdate = true;
-            engAttr.needsUpdate = true;
-            
-            controls.update();
-            renderer.render(scene, camera);
-        }
+			const instGeo = new THREE.InstancedBufferGeometry();
+			instGeo.index = baseGeometry.index;
+			instGeo.attributes.position = baseGeometry.attributes.position;
 
-        init();
-        animate();
+			const posAttr = new THREE.InstancedBufferAttribute(pos, 3);
+			const velAttr = new THREE.InstancedBufferAttribute(vel, 3);
+			const engAttr = new THREE.InstancedBufferAttribute(energy, 1);
+			instGeo.setAttribute("offset", posAttr);
+			instGeo.setAttribute("velocity", velAttr);
+			instGeo.setAttribute("energy", engAttr);
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth/window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
-</body>
+			const mat = new THREE.ShaderMaterial({
+				vertexShader: `
+			        attribute vec3 offset;
+			        attribute vec3 velocity;
+			        attribute float energy;
+			        varying float vEnergy;
+			        varying float vAlpha;
+			        void main() {
+			            vEnergy = energy;
+
+			            vec3 vDir = normalize(velocity);
+			            vec3 up = abs(vDir.y) > 0.999 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
+			            vec3 right = normalize(cross(up, vDir));
+			            vec3 newUp = cross(vDir, right);
+			            mat3 rot = mat3(right, newUp, vDir);
+
+			            vec3 scaledPos = position;
+			            float speed = length(velocity);
+			            scaledPos.z *= (0.5 + speed * 1.2);
+			            scaledPos.xy *= (0.3 + energy * 0.8);
+
+			            vAlpha = min(1.0, speed * 0.5);
+
+			            vec3 transformed = rot * scaledPos + offset;
+			            gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
+			        }
+			    `,
+				fragmentShader: `
+			        varying float vEnergy;
+			        varying float vAlpha;
+			        void main() {
+			            vec3 colCyan = vec3(0.0, 0.85, 1.0);
+			            vec3 colMagenta = vec3(0.8, 0.0, 1.0);
+
+			            vec3 finalCol = mix(colCyan, colMagenta, vEnergy);
+			            finalCol *= (1.2 + vEnergy * 0.8);
+
+			            gl_FragColor = vec4(finalCol, vAlpha);
+			        }
+			    `,
+				transparent: true,
+				blending: THREE.AdditiveBlending,
+				depthWrite: false,
+			});
+
+			const swarm = new THREE.Mesh(instGeo, mat);
+			scene.add(swarm);
+
+			const sourceCore = new THREE.Mesh(
+				new THREE.SphereGeometry(20, 32, 32),
+				new THREE.MeshBasicMaterial({
+					color: 0xffffff,
+					transparent: true,
+					opacity: 0.8,
+				}),
+			);
+			const sourceAura = new THREE.Mesh(
+				new THREE.SphereGeometry(45, 32, 32),
+				new THREE.MeshBasicMaterial({
+					color: 0xd500f9,
+					transparent: true,
+					opacity: 0.15,
+					blending: THREE.AdditiveBlending,
+					depthWrite: false,
+				}),
+			);
+			scene.add(sourceCore);
+			scene.add(sourceAura);
+
+			sourceCore.visible = false;
+			sourceAura.visible = false;
+
+			function resetGame() {
+				initData();
+				ENERGY_SOURCE.x = 0;
+				ENERGY_SOURCE.y = 0;
+				ENERGY_SOURCE.z = 0;
+				sourceCore.position.set(0, 0, 0);
+				sourceAura.position.set(0, 0, 0);
+
+				gameTimeLeft = 60.0;
+				winConditionTimer = 0.0;
+				lastTime = performance.now();
+
+				posAttr.needsUpdate = true;
+				velAttr.needsUpdate = true;
+				engAttr.needsUpdate = true;
+
+				elTimerBar.classList.remove("timer-warning");
+				elTimeText.classList.remove("timer-warning-text");
+				elTimerBar.style.width = "100%";
+				elTimeText.innerText = "Time: 60.0s";
+				elWinProgress.innerText = "";
+			}
+
+			function startGame() {
+				resetGame();
+				currentGameState = "PLAYING";
+				elMainMenu.classList.add("hidden");
+				elHud.classList.remove("hidden");
+
+				controls.autoRotate = false;
+				sourceCore.visible = true;
+				sourceAura.visible = true;
+			}
+
+			function endGame(result) {
+				currentGameState = result;
+				elHud.classList.add("hidden");
+				elEndScreen.classList.remove("hidden");
+				elEndScreen.className = `overlay ${result.toLowerCase()}`;
+
+				controls.autoRotate = true;
+				sourceCore.visible = false;
+				sourceAura.visible = false;
+				keysDown.clear();
+
+				if (result === "WIN") {
+					elEndTitle.innerText = "Swarm Synthesized!";
+					elEndSubtitle.innerText = `You completed the objective with ${gameTimeLeft.toFixed(1)}s remaining.`;
+				} else {
+					elEndTitle.innerText = "Swarm Starved!";
+					elEndSubtitle.innerText =
+						"Time ran out before 90% of the swarm was fed.";
+				}
+			}
+
+			function updateSimulation(dt) {
+				// Player Input
+				const moveSpeed = 400 * dt;
+				if (keysDown.has("w")) ENERGY_SOURCE.z -= moveSpeed;
+				if (keysDown.has("s")) ENERGY_SOURCE.z += moveSpeed;
+				if (keysDown.has("a")) ENERGY_SOURCE.x -= moveSpeed;
+				if (keysDown.has("d")) ENERGY_SOURCE.x += moveSpeed;
+
+				// Bounds constrain
+				ENERGY_SOURCE.x = Math.max(
+					-600,
+					Math.min(600, ENERGY_SOURCE.x),
+				);
+				ENERGY_SOURCE.z = Math.max(
+					-600,
+					Math.min(600, ENERGY_SOURCE.z),
+				);
+
+				sourceCore.position.set(
+					ENERGY_SOURCE.x,
+					ENERGY_SOURCE.y,
+					ENERGY_SOURCE.z,
+				);
+				sourceAura.position.set(
+					ENERGY_SOURCE.x,
+					ENERGY_SOURCE.y,
+					ENERGY_SOURCE.z,
+				);
+
+				// Spatial Hashing
+				gridHead.fill(-1);
+				for (let i = 0; i < N; i++) {
+					let gx = Math.floor((pos[i * 3] + 600) / CELL),
+						gy = Math.floor((pos[i * 3 + 1] + 600) / CELL),
+						gz = Math.floor((pos[i * 3 + 2] + 600) / CELL);
+					gx = Math.max(0, Math.min(GRID_RES - 1, gx));
+					gy = Math.max(0, Math.min(GRID_RES - 1, gy));
+					gz = Math.max(0, Math.min(GRID_RES - 1, gz));
+					const idx = gx + gy * GRID_RES + gz * GRID_RES * GRID_RES;
+					nextPtr[i] = gridHead[idx];
+					gridHead[idx] = i;
+				}
+
+				let hungryCount = 0,
+					fullCount = 0;
+
+				for (let i = 0; i < N; i++) {
+					const i3 = i * 3;
+					const px = pos[i3],
+						py = pos[i3 + 1],
+						pz = pos[i3 + 2];
+					const vx = vel[i3],
+						vy = vel[i3 + 1],
+						vz = vel[i3 + 2];
+
+					const toCenterX = ENERGY_SOURCE.x - px;
+					const toCenterY = ENERGY_SOURCE.y - py;
+					const toCenterZ = ENERGY_SOURCE.z - pz;
+					const distToCenter =
+						Math.sqrt(
+							toCenterX ** 2 + toCenterY ** 2 + toCenterZ ** 2,
+						) + 0.1;
+
+					if (distToCenter < CHARGE_RADIUS) {
+						energy[i] += 0.015;
+					} else {
+						energy[i] -= 0.003;
+					}
+					energy[i] = Math.max(0.0, Math.min(1.0, energy[i]));
+
+					if (energy[i] > 0.95) states[i] = 1;
+					if (energy[i] < 0.2) states[i] = 0;
+					if (states[i] === 0) hungryCount++;
+					else fullCount++;
+
+					let sX = 0,
+						sY = 0,
+						sZ = 0,
+						sCount = 0;
+					let aX = 0,
+						aY = 0,
+						aZ = 0,
+						aCount = 0;
+					let cX = 0,
+						cY = 0,
+						cZ = 0,
+						cCount = 0;
+
+					let gx = Math.floor((px + 600) / CELL),
+						gy = Math.floor((py + 600) / CELL),
+						gz = Math.floor((pz + 600) / CELL);
+					for (let x = -1; x <= 1; x++)
+						for (let y = -1; y <= 1; y++)
+							for (let z = -1; z <= 1; z++) {
+								const ni =
+									gx +
+									x +
+									(gy + y) * GRID_RES +
+									(gz + z) * GRID_RES * GRID_RES;
+								if (ni >= 0 && ni < GRID_RES ** 3) {
+									let head = gridHead[ni];
+									while (head !== -1) {
+										if (head !== i) {
+											const h3 = head * 3;
+											const dx = px - pos[h3],
+												dy = py - pos[h3 + 1],
+												dz = pz - pos[h3 + 2];
+											const dSq =
+												dx * dx + dy * dy + dz * dz;
+
+											if (
+												dSq > 0.0001 &&
+												dSq <
+													PARAMS.sepDist *
+														PARAMS.sepDist
+											) {
+												const d = Math.sqrt(dSq);
+												const push =
+													(PARAMS.sepDist - d) / d;
+												sX += dx * push;
+												sY += dy * push;
+												sZ += dz * push;
+												sCount++;
+											}
+											if (
+												dSq <
+												PARAMS.aliDist * PARAMS.aliDist
+											) {
+												aX += vel[h3];
+												aY += vel[h3 + 1];
+												aZ += vel[h3 + 2];
+												aCount++;
+											}
+											if (
+												dSq <
+													PARAMS.cohDist *
+														PARAMS.cohDist &&
+												states[head] === states[i]
+											) {
+												cX += pos[h3];
+												cY += pos[h3 + 1];
+												cZ += pos[h3 + 2];
+												cCount++;
+											}
+										}
+										head = nextPtr[head];
+									}
+								}
+							}
+
+					let fX = 0,
+						fY = 0,
+						fZ = 0;
+					if (sCount > 0) {
+						fX += sX * 0.8;
+						fY += sY * 0.8;
+						fZ += sZ * 0.8;
+					}
+					if (aCount > 0) {
+						fX += (aX / aCount - vx) * 0.05;
+						fY += (aY / aCount - vy) * 0.05;
+						fZ += (aZ / aCount - vz) * 0.05;
+					}
+					if (cCount > 0) {
+						fX += (cX / cCount - px) * 0.01;
+						fY += (cY / cCount - py) * 0.01;
+						fZ += (cZ / cCount - pz) * 0.01;
+					}
+
+					if (states[i] === 0) {
+						fX += (toCenterX / distToCenter) * 0.18;
+						fY += (toCenterY / distToCenter) * 0.18;
+						fZ += (toCenterZ / distToCenter) * 0.18;
+					} else {
+						fX += (-toCenterX / distToCenter) * 0.06;
+						fY += (-toCenterY / distToCenter) * 0.06;
+						fZ += (-toCenterZ / distToCenter) * 0.06;
+						fX += (Math.random() - 0.5) * 0.25;
+						fY += (Math.random() - 0.5) * 0.25;
+						fZ += (Math.random() - 0.5) * 0.25;
+					}
+
+					vel[i3] += fX;
+					vel[i3 + 1] += fY;
+					vel[i3 + 2] += fZ;
+					const speed = Math.sqrt(
+						vel[i3] ** 2 + vel[i3 + 1] ** 2 + vel[i3 + 2] ** 2,
+					);
+					if (speed > PARAMS.maxSpeed) {
+						vel[i3] = (vel[i3] / speed) * PARAMS.maxSpeed;
+						vel[i3 + 1] = (vel[i3 + 1] / speed) * PARAMS.maxSpeed;
+						vel[i3 + 2] = (vel[i3 + 2] / speed) * PARAMS.maxSpeed;
+					}
+					pos[i3] += vel[i3];
+					pos[i3 + 1] += vel[i3 + 1];
+					pos[i3 + 2] += vel[i3 + 2];
+				}
+
+				// Timers & Logic
+				gameTimeLeft -= dt;
+				const fullRatio = fullCount / N;
+
+				if (fullRatio >= 0.9) {
+					winConditionTimer += dt;
+				} else {
+					winConditionTimer = 0;
+				}
+
+				// UI Throttle
+				if (Math.random() < 0.1) {
+					elStateLog.innerHTML = `Seekers: ${hungryCount}<br>Wanderers: ${fullCount} (${(fullRatio * 100).toFixed(1)}%)`;
+					elTimeText.innerText = `Time: ${Math.max(0, gameTimeLeft).toFixed(1)}s`;
+					elTimerBar.style.width = `${Math.max(0, (gameTimeLeft / 60) * 100)}%`;
+
+					if (winConditionTimer > 0) {
+						elWinProgress.innerText = `Maintaining 90%: ${winConditionTimer.toFixed(1)}s / 5.0s`;
+					} else {
+						elWinProgress.innerText = "";
+					}
+
+					if (
+						gameTimeLeft <= 10 &&
+						!elTimerBar.classList.contains("timer-warning")
+					) {
+						elTimerBar.classList.add("timer-warning");
+						elTimeText.classList.add("timer-warning-text");
+					}
+				}
+
+				if (winConditionTimer >= 5.0) {
+					endGame("WIN");
+				} else if (gameTimeLeft <= 0) {
+					endGame("LOSS");
+				}
+			}
+
+			initData();
+			posAttr.needsUpdate = true;
+			velAttr.needsUpdate = true;
+			engAttr.needsUpdate = true;
+
+			function animate() {
+				requestAnimationFrame(animate);
+
+				const now = performance.now();
+				const dt = (now - lastTime) / 1000.0;
+				lastTime = now;
+
+				if (currentGameState === "PLAYING") {
+					updateSimulation(Math.min(dt, 0.1)); // Cap dt to avoid huge jumps on tab pause
+					posAttr.needsUpdate = true;
+					velAttr.needsUpdate = true;
+					engAttr.needsUpdate = true;
+				}
+				// If MENU or END, Three.js instancing displays the frozen buffers,
+				// and OrbitControls slowly auto-rotates around them.
+
+				controls.update();
+				renderer.render(scene, camera);
+			}
+
+			animate();
+
+			window.addEventListener("resize", () => {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize(window.innerWidth, window.innerHeight);
+			});
+		</script>
+	</body>
 </html>
