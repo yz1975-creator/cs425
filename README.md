@@ -1,4 +1,4 @@
-LuminaSwarm (Group 2) - Assignment 3 MVP
+LuminaSwarm (Group 2) - Assignment 5 Beta Build
 
 Group Members: Bryan Shangguan (netID: bys8), Yijia Zhang (netID: yz1975)
 
