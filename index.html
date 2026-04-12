@@ -2,16 +2,14 @@
 <html lang="zh-CN">
 	<head>
 		<meta charset="UTF-8" />
-		<title>LuminaSwarm_Final_MVP_Ass4</title>
+		<title>LuminaSwarm_Beta_Build_Ass5_Hardcore</title>
 		<style>
 			body {
 				margin: 0;
-				background: #0f172a;
+				background: #050811;
 				overflow: hidden;
 				font-family: "Consolas", monospace;
 			}
-
-			/* Overlay Containers */
 			.overlay {
 				position: absolute;
 				top: 0;
@@ -22,7 +20,7 @@
 				flex-direction: column;
 				justify-content: center;
 				align-items: center;
-				background: rgba(15, 23, 42, 0.7);
+				background: rgba(5, 8, 17, 0.7);
 				backdrop-filter: blur(5px);
 				z-index: 200;
 				transition: opacity 0.5s;
@@ -30,28 +28,24 @@
 			.hidden {
 				display: none !important;
 				opacity: 0;
-				pointer-events: none;
+				pointer-events: none !important;
 			}
-
-			/* Main Menu */
 			#main-menu h1 {
-				color: #d500f9;
+				color: #00e5ff;
 				font-size: 4em;
-				text-shadow: 0 0 20px #d500f9;
+				text-shadow: 0 0 20px #00e5ff, 0 0 40px #d500f9;
 				margin-bottom: 10px;
 				text-transform: uppercase;
 				letter-spacing: 5px;
 				text-align: center;
 			}
 			#main-menu p {
-				color: #00e5ff;
+				color: #d500f9;
 				font-size: 1.2em;
 				margin-bottom: 40px;
-				text-shadow: 0 0 10px #00e5ff;
+				text-shadow: 0 0 10px #d500f9;
 				text-align: center;
 			}
-
-			/* End Screen */
 			#end-screen h1 {
 				font-size: 4em;
 				margin-bottom: 10px;
@@ -72,11 +66,9 @@
 				margin-bottom: 40px;
 				text-align: center;
 			}
-
-			/* Buttons */
 			button {
-				background: rgba(213, 0, 249, 0.2);
-				border: 2px solid #d500f9;
+				background: rgba(0, 229, 255, 0.1);
+				border: 2px solid #00e5ff;
 				color: #fff;
 				padding: 15px 40px;
 				font-size: 1.5em;
@@ -84,22 +76,20 @@
 				cursor: pointer;
 				text-transform: uppercase;
 				transition: all 0.3s;
-				box-shadow: 0 0 15px rgba(213, 0, 249, 0.4);
+				box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
 			}
 			button:hover {
-				background: #d500f9;
-				color: #fff;
-				box-shadow: 0 0 30px #d500f9;
+				background: #00e5ff;
+				color: #000;
+				box-shadow: 0 0 30px #00e5ff;
 				transform: scale(1.05);
 			}
-
-			/* HUD */
 			#hud {
 				position: absolute;
 				top: 20px;
 				left: 20px;
 				color: #00e5ff;
-				background: rgba(15, 23, 42, 0.85);
+				background: rgba(5, 8, 17, 0.85);
 				padding: 20px;
 				border-left: 3px solid #d500f9;
 				pointer-events: none;
@@ -119,8 +109,6 @@
 				font-size: 0.85em;
 				margin-top: 5px;
 			}
-
-			/* Timer Bar */
 			#timer-container {
 				width: 100%;
 				height: 10px;
@@ -133,9 +121,7 @@
 				width: 100%;
 				height: 100%;
 				background: #00e5ff;
-				transition:
-					width 0.1s,
-					background-color 0.3s;
+				transition: width 0.1s, background-color 0.3s;
 			}
 			.timer-warning {
 				background: #ef4444 !important;
@@ -148,66 +134,31 @@
 		</style>
 	</head>
 	<body>
-		<!-- Main Menu -->
 		<div id="main-menu" class="overlay">
 			<h1>LuminaSwarm</h1>
-			<p>Interactive MVP 2.0</p>
-			<div
-				style="
-					color: #aaa;
-					margin-bottom: 30px;
-					text-align: center;
-					line-height: 1.5;
-				"
-			>
-				Use <strong style="color: #fff">WASD</strong> to move the Energy
-				Source.<br />
+			<p>Beta Build: Advanced VFX & Robust Systems</p>
+			<div style="color: #aaa; margin-bottom: 30px; text-align: center; line-height: 1.5;">
+				Use <strong style="color: #fff">WASD</strong> to move the Energy Source.<br />
 				Feed 90% of the swarm for 5 seconds to win.<br />
 				You have 60 seconds.
 			</div>
-			<button id="start-btn">Start</button>
+			<button id="start-btn">Initialize Simulation</button>
 		</div>
 
-		<!-- End Screen -->
 		<div id="end-screen" class="overlay hidden">
 			<h1 id="end-title">Swarm Synthesized!</h1>
 			<p id="end-subtitle">Simulation Complete.</p>
 			<button id="restart-btn">Main Menu</button>
 		</div>
 
-		<!-- HUD -->
 		<div id="hud" class="hidden">
-			<h3
-				style="
-					margin: 0 0 10px 0;
-					color: #d500f9;
-					text-shadow: 0 0 10px #d500f9;
-				"
-			>
-				LuminaSwarm HUD
-			</h3>
-			<div class="highlight">Agents: 12,000 Units</div>
+			<h3 style="margin: 0 0 10px 0; color: #d500f9; text-shadow: 0 0 10px #d500f9;">System HUD</h3>
+			<div class="highlight">Agents: 2,000 Units (VFX Opt)</div>
 			<div class="grade-point">Goal: 90% fed for 5s</div>
-			<div
-				id="time-text"
-				style="margin-top: 15px; font-weight: bold; font-size: 1.2em"
-			>
-				Time: 60.0s
-			</div>
+			<div id="time-text" style="margin-top: 15px; font-weight: bold; font-size: 1.2em;">Time: 60.0s</div>
 			<div id="timer-container"><div id="timer-bar"></div></div>
-			<div
-				id="state-log"
-				style="margin-top: 15px; font-size: 11px; color: #aaa"
-			></div>
-			<div
-				id="win-progress"
-				style="
-					margin-top: 10px;
-					font-size: 11px;
-					color: #4ade80;
-					font-weight: bold;
-				"
-			></div>
+			<div id="state-log" style="margin-top: 15px; font-size: 11px; color: #aaa;"></div>
+			<div id="win-progress" style="margin-top: 10px; font-size: 11px; color: #4ade80; font-weight: bold;"></div>
 		</div>
 
 		<script type="importmap">
@@ -222,18 +173,29 @@
 		<script type="module">
 			import * as THREE from "three";
 			import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+			import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+			import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+			import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+			import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 
-			const N = 12000;
+			const N = 2000;
 			const ENERGY_SOURCE = { x: 0, y: 0, z: 0 };
+			let ENERGY_VELOCITY = 0;
+			let PREV_ENERGY_SOURCE_X = 0;
+			let PREV_ENERGY_SOURCE_Z = 0;
+			let swarmFullRatio = 0.0;
+			let overchargeFactor = 0.0;
+
 			const CHARGE_RADIUS = 220.0;
 
 			const pos = new Float32Array(N * 3);
 			const vel = new Float32Array(N * 3);
 			const energy = new Float32Array(N);
 			const states = new Int8Array(N);
+			const seeds = new Float32Array(N);
 
-			const GRID_RES = 30,
-				CELL = 1200 / GRID_RES;
+			const GRID_RES = 30;
+			const CELL = 1200 / GRID_RES;
 			const gridHead = new Int32Array(GRID_RES ** 3);
 			const nextPtr = new Int32Array(N);
 
@@ -244,14 +206,12 @@
 				cohDist: 50.0,
 			};
 
-			// Game State Variables
-			let currentGameState = "MENU"; // 'MENU', 'PLAYING', 'WIN', 'LOSS'
+			let currentGameState = "MENU";
 			let gameTimeLeft = 60.0;
 			let winConditionTimer = 0.0;
 			const keysDown = new Set();
 			let lastTime = performance.now();
 
-			// UI Elements
 			const elMainMenu = document.getElementById("main-menu");
 			const elEndScreen = document.getElementById("end-screen");
 			const elHud = document.getElementById("hud");
@@ -262,183 +222,357 @@
 			const elStateLog = document.getElementById("state-log");
 			const elWinProgress = document.getElementById("win-progress");
 
-			// Input Listeners
-			window.addEventListener("keydown", (e) =>
-				keysDown.add(e.key.toLowerCase()),
-			);
-			window.addEventListener("keyup", (e) =>
-				keysDown.delete(e.key.toLowerCase()),
-			);
+			window.addEventListener("keydown", (e) => keysDown.add(e.key.toLowerCase()));
+			window.addEventListener("keyup", (e) => keysDown.delete(e.key.toLowerCase()));
 
-			document
-				.getElementById("start-btn")
-				.addEventListener("click", (e) => {
-					e.stopPropagation();
-					startGame();
-				});
-			document
-				.getElementById("restart-btn")
-				.addEventListener("click", (e) => {
-					e.stopPropagation();
-					currentGameState = "MENU";
-					elEndScreen.classList.add("hidden");
-					elMainMenu.classList.remove("hidden");
+			document.getElementById("start-btn").addEventListener("click", (e) => {
+				e.stopPropagation();
+				startGame();
+			});
 
-					// Re-enable cinematic rotation on menu
-					controls.autoRotate = true;
-				});
+			document.getElementById("restart-btn").addEventListener("click", (e) => {
+				e.stopPropagation();
+				currentGameState = "MENU";
+				elEndScreen.classList.add("hidden");
+				elEndScreen.classList.remove("win", "loss");
+				elMainMenu.classList.remove("hidden");
+				elHud.classList.add("hidden");
+				controls.autoRotate = true;
+				sourceCore.visible = false;
+				sourceGlow.visible = false;
+				sourceRing.visible = false;
+			});
 
-			// Prevent click-through on UI overlays
-			elMainMenu.addEventListener("mousedown", (e) =>
-				e.stopPropagation(),
-			);
-			elEndScreen.addEventListener("mousedown", (e) =>
-				e.stopPropagation(),
-			);
+			elMainMenu.addEventListener("mousedown", (e) => e.stopPropagation());
+			elEndScreen.addEventListener("mousedown", (e) => e.stopPropagation());
+			elMainMenu.addEventListener("wheel", (e) => e.stopPropagation(), { passive: false });
+			elEndScreen.addEventListener("wheel", (e) => e.stopPropagation(), { passive: false });
 
 			function initData() {
 				for (let i = 0; i < N; i++) {
 					pos[i * 3] = (Math.random() - 0.5) * 1200;
 					pos[i * 3 + 1] = (Math.random() - 0.5) * 1200;
 					pos[i * 3 + 2] = (Math.random() - 0.5) * 1200;
+
 					vel[i * 3] = (Math.random() - 0.5) * 3;
 					vel[i * 3 + 1] = (Math.random() - 0.5) * 3;
 					vel[i * 3 + 2] = (Math.random() - 0.5) * 3;
+
 					energy[i] = Math.random();
 					states[i] = energy[i] > 0.5 ? 1 : 0;
+					seeds[i] = Math.random();
 				}
 			}
 
 			const scene = new THREE.Scene();
-			const bgColor = 0x0f172a;
-			scene.fog = new THREE.FogExp2(bgColor, 0.0012);
+			const bgColor = 0x050811;
+			scene.fog = new THREE.FogExp2(bgColor, 0.00016);
 
-			const camera = new THREE.PerspectiveCamera(
-				60,
-				window.innerWidth / window.innerHeight,
-				1,
-				5000,
-			);
+			const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 5000);
 			camera.position.set(500, 300, 700);
 
-			const renderer = new THREE.WebGLRenderer({
-				antialias: true,
-				powerPreference: "high-performance",
-			});
+			const renderer = new THREE.WebGLRenderer({ powerPreference: "high-performance", antialias: true });
 			renderer.setSize(window.innerWidth, window.innerHeight);
+			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 			renderer.setClearColor(bgColor);
+			renderer.toneMapping = THREE.ReinhardToneMapping;
+			renderer.toneMappingExposure = 1.0;
 			document.body.appendChild(renderer.domElement);
+
+			const renderScene = new RenderPass(scene, camera);
+
+			const bloomPass = new UnrealBloomPass(
+				new THREE.Vector2(window.innerWidth, window.innerHeight),
+				1.5,
+				0.4,
+				0.85
+			);
+			bloomPass.threshold = 0.06;
+			bloomPass.strength = 0.42;
+			bloomPass.radius = 0.16;
+
+			const CustomVFXShader = {
+				uniforms: {
+					tDiffuse: { value: null },
+					amount: { value: 0.0 },
+					overdrive: { value: 0.0 },
+				},
+				vertexShader: `
+					varying vec2 vUv;
+					void main() {
+						vUv = uv;
+						gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+					}
+				`,
+				fragmentShader: `
+					uniform sampler2D tDiffuse;
+					uniform float amount;
+					uniform float overdrive;
+					varying vec2 vUv;
+
+					void main() {
+						vec2 center = vec2(0.5);
+						vec2 dir = vUv - center;
+						float dist = length(dir);
+
+						vec2 dirNorm = normalize(dir + 1e-6);
+						float radialStrength = amount * 0.008 + overdrive * 0.01;
+						vec2 radialUv = vUv + dirNorm * dist * radialStrength;
+
+						vec2 chromaOffset = vec2((amount + overdrive * 0.8) * 0.0028, 0.0);
+
+						vec4 cr = texture2D(tDiffuse, radialUv + chromaOffset);
+						vec4 cga = texture2D(tDiffuse, radialUv);
+						vec4 cb = texture2D(tDiffuse, radialUv - chromaOffset);
+
+						vec3 col = vec3(cr.r, cga.g, cb.b);
+
+						float vignette = smoothstep(0.94, 0.22, dist * (1.0 + amount * 1.1 + overdrive * 1.4));
+						col *= vignette;
+
+						float haze = smoothstep(0.78, 0.18, dist) * overdrive * 0.08;
+						col += vec3(0.05, 0.015, 0.08) * haze;
+
+						gl_FragColor = vec4(col, cga.a);
+					}
+				`,
+			};
+
+			const customVFXPass = new ShaderPass(CustomVFXShader);
+
+			const composer = new EffectComposer(renderer);
+			composer.addPass(renderScene);
+			composer.addPass(bloomPass);
+			composer.addPass(customVFXPass);
 
 			const controls = new OrbitControls(camera, renderer.domElement);
 			controls.enableDamping = true;
+			controls.enableZoom = true;
+			controls.zoomSpeed = 1.0;
+			controls.minDistance = 120;
+			controls.maxDistance = 2200;
 			controls.autoRotate = true;
-			controls.autoRotateSpeed = 0.5;
+			controls.autoRotateSpeed = 0.45;
 
-			// Visuals
-			const gridHelper = new THREE.GridHelper(
-				2000,
-				40,
-				0x1e293b,
-				0x1e293b,
-			);
+			const gridHelper = new THREE.GridHelper(2000, 40, 0x00e5ff, 0x1e293b);
 			gridHelper.position.y = -400;
 			gridHelper.material.transparent = true;
-			gridHelper.material.opacity = 0.3;
+			gridHelper.material.opacity = 0.14;
 			scene.add(gridHelper);
 
-			const baseGeometry = new THREE.ConeGeometry(0.3, 6.0, 4);
+			const axesHelper = new THREE.AxesHelper(250);
+			axesHelper.position.set(0, -399, 0);
+			scene.add(axesHelper);
+
+			const baseGeometry = new THREE.PlaneGeometry(1.6, 16.0, 1, 16);
 			baseGeometry.rotateX(Math.PI / 2);
+			baseGeometry.translate(0, 0, -7.0);
 
 			const instGeo = new THREE.InstancedBufferGeometry();
 			instGeo.index = baseGeometry.index;
 			instGeo.attributes.position = baseGeometry.attributes.position;
+			instGeo.attributes.uv = baseGeometry.attributes.uv;
 
 			const posAttr = new THREE.InstancedBufferAttribute(pos, 3);
 			const velAttr = new THREE.InstancedBufferAttribute(vel, 3);
 			const engAttr = new THREE.InstancedBufferAttribute(energy, 1);
+			const seedAttr = new THREE.InstancedBufferAttribute(seeds, 1);
+
 			instGeo.setAttribute("offset", posAttr);
 			instGeo.setAttribute("velocity", velAttr);
 			instGeo.setAttribute("energy", engAttr);
+			instGeo.setAttribute("seed", seedAttr);
 
 			const mat = new THREE.ShaderMaterial({
+				uniforms: {
+					uTime: { value: 0 },
+					uSourcePos: { value: new THREE.Vector3() },
+					uChargeRadius: { value: CHARGE_RADIUS },
+				},
 				vertexShader: `
-			        attribute vec3 offset;
-			        attribute vec3 velocity;
-			        attribute float energy;
-			        varying float vEnergy;
-			        varying float vAlpha;
-			        void main() {
-			            vEnergy = energy;
+					attribute vec3 offset;
+					attribute vec3 velocity;
+					attribute float energy;
+					attribute float seed;
 
-			            vec3 vDir = normalize(velocity);
-			            vec3 up = abs(vDir.y) > 0.999 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
-			            vec3 right = normalize(cross(up, vDir));
-			            vec3 newUp = cross(vDir, right);
-			            mat3 rot = mat3(right, newUp, vDir);
+					uniform float uTime;
+					uniform vec3 uSourcePos;
+					uniform float uChargeRadius;
 
-			            vec3 scaledPos = position;
-			            float speed = length(velocity);
-			            scaledPos.z *= (0.5 + speed * 1.2);
-			            scaledPos.xy *= (0.3 + energy * 0.8);
+					varying float vEnergy;
+					varying float vAlpha;
+					varying float vTier;
+					varying float vHeadMask;
+					varying vec2 vUv;
+					varying float vSeed;
+					varying float vHeat;
+					varying float vCenterBand;
 
-			            vAlpha = min(1.0, speed * 0.5);
+					void main() {
+						vUv = uv;
+						vEnergy = energy;
+						vSeed = seed;
 
-			            vec3 transformed = rot * scaledPos + offset;
-			            gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
-			        }
-			    `,
+						float speed = length(velocity);
+						float tier = smoothstep(0.68, 1.0, energy);
+						vTier = tier;
+
+						float distToSource = distance(offset, uSourcePos);
+						float heat = 1.0 - smoothstep(uChargeRadius * 0.65, uChargeRadius * 2.2, distToSource);
+						vHeat = heat;
+
+						vec3 fwd = normalize(velocity + vec3(1e-5));
+						vec3 camDir = normalize(cameraPosition - offset);
+						vec3 side = normalize(cross(camDir, fwd) + vec3(1e-5));
+						vec3 up = normalize(cross(fwd, side));
+
+						vec3 p = position;
+
+						float headMask = smoothstep(0.5, 1.0, uv.y);
+						vHeadMask = headMask;
+
+						float randA = 0.9 + seed * 0.7;
+						float randB = 0.9 + fract(seed * 11.37) * 0.5;
+
+						float lengthScale = (1.2 + speed * 1.8 + energy * 1.1 + tier * 1.2 + heat * 1.1) * randA;
+						float widthBase = (1.0 + energy * 0.45 + tier * 0.25 + heat * 0.75) * randB;
+
+						float widthProfile = mix(0.32, 1.45, pow(uv.y, 0.5));
+						float centerBand = 1.0 - smoothstep(0.2, 1.0, abs(uv.x - 0.5) * 2.0);
+						vCenterBand = centerBand;
+
+						p.z *= lengthScale;
+						p.x *= widthBase * widthProfile;
+
+						float flutterA = sin(uTime * (2.0 + seed * 3.0) + uv.y * 12.0 + seed * 20.0);
+						float flutterB = cos(uTime * (1.4 + seed * 2.1) + uv.y * 8.0 + seed * 11.0);
+						float bend = (0.16 + tier * 0.1 + heat * 0.18 + speed * 0.015) * (1.0 - headMask);
+
+						p.x += flutterA * bend;
+						p.y += flutterB * bend * 0.45;
+
+						p.x *= mix(0.85, 1.35, heat);
+						p.y *= mix(0.9, 1.18, heat);
+
+						float alphaHead = 0.34 + energy * 0.18 + tier * 0.12 + heat * 0.18;
+						float alphaTrail = pow(uv.y, 0.95);
+						vAlpha = min(1.0, alphaHead * alphaTrail);
+
+						vec3 transformed =
+							offset +
+							side * p.x +
+							up   * p.y +
+							fwd  * p.z;
+
+						gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
+					}
+				`,
 				fragmentShader: `
-			        varying float vEnergy;
-			        varying float vAlpha;
-			        void main() {
-			            vec3 colCyan = vec3(0.0, 0.85, 1.0);
-			            vec3 colMagenta = vec3(0.8, 0.0, 1.0);
+					varying float vEnergy;
+					varying float vAlpha;
+					varying float vTier;
+					varying float vHeadMask;
+					varying vec2 vUv;
+					varying float vSeed;
+					varying float vHeat;
+					varying float vCenterBand;
 
-			            vec3 finalCol = mix(colCyan, colMagenta, vEnergy);
-			            finalCol *= (1.2 + vEnergy * 0.8);
+					void main() {
+						vec3 colDeepBlue = vec3(0.10, 0.20, 0.95);
+						vec3 colCyan = vec3(0.00, 0.95, 1.0);
+						vec3 colViolet = vec3(0.60, 0.18, 0.98);
+						vec3 colPink = vec3(1.0, 0.35, 0.82);
+						vec3 colOrange = vec3(1.0, 0.52, 0.18);
+						vec3 colWhite = vec3(1.0, 0.98, 0.96);
 
-			            gl_FragColor = vec4(finalCol, vAlpha);
-			        }
-			    `,
+						float colorJitter = fract(vSeed * 31.13);
+
+						vec3 coolCol = mix(colDeepBlue, colViolet, 0.35 + colorJitter * 0.35);
+						coolCol = mix(coolCol, colCyan, smoothstep(0.15, 0.75, vEnergy));
+
+						vec3 hotCol = mix(colPink, colOrange, smoothstep(0.25, 1.0, vHeat));
+						vec3 baseCol = mix(coolCol, hotCol, vHeat * 0.78);
+
+						baseCol = mix(baseCol * 0.72, baseCol, vHeadMask);
+						baseCol = mix(baseCol, colWhite, vTier * 0.10 + vHeat * 0.08);
+
+						float sideFade = 1.0 - smoothstep(0.18, 1.0, abs(vUv.x - 0.5) * 2.0);
+						float trailFade = pow(vUv.y, 1.05);
+						float coreGlow = pow(vCenterBand, 1.8) * (0.55 + vHeat * 0.65);
+
+						float sparkle = 0.95 + fract(vSeed * 97.7) * 0.10;
+						float intensity =
+							(1.05 + vEnergy * 0.65 + vTier * 0.22 + vHeat * 0.40 + coreGlow * 0.18) * sparkle;
+
+						vec3 finalCol = baseCol * intensity;
+						float finalAlpha = vAlpha * sideFade * trailFade;
+
+						gl_FragColor = vec4(finalCol, finalAlpha);
+					}
+				`,
 				transparent: true,
 				blending: THREE.AdditiveBlending,
 				depthWrite: false,
+				side: THREE.DoubleSide,
 			});
 
 			const swarm = new THREE.Mesh(instGeo, mat);
+			swarm.frustumCulled = false;
 			scene.add(swarm);
 
 			const sourceCore = new THREE.Mesh(
-				new THREE.SphereGeometry(20, 32, 32),
-				new THREE.MeshBasicMaterial({
-					color: 0xffffff,
-					transparent: true,
-					opacity: 0.8,
-				}),
-			);
-			const sourceAura = new THREE.Mesh(
-				new THREE.SphereGeometry(45, 32, 32),
-				new THREE.MeshBasicMaterial({
-					color: 0xd500f9,
-					transparent: true,
-					opacity: 0.15,
-					blending: THREE.AdditiveBlending,
-					depthWrite: false,
-				}),
+				new THREE.SphereGeometry(22, 32, 32),
+				new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1.0 })
 			);
 			scene.add(sourceCore);
-			scene.add(sourceAura);
+
+			const sourceGlow = new THREE.Mesh(
+				new THREE.SphereGeometry(42, 24, 24),
+				new THREE.MeshBasicMaterial({
+					color: 0xff8dfc,
+					transparent: true,
+					opacity: 0.08,
+					blending: THREE.AdditiveBlending,
+					depthWrite: false,
+				})
+			);
+			scene.add(sourceGlow);
+
+			const sourceRing = new THREE.Mesh(
+				new THREE.TorusGeometry(44, 3.0, 16, 64),
+				new THREE.MeshBasicMaterial({
+					color: 0xff9e57,
+					transparent: true,
+					opacity: 0.12,
+					blending: THREE.AdditiveBlending,
+					depthWrite: false,
+				})
+			);
+			sourceRing.rotation.x = Math.PI / 2;
+			scene.add(sourceRing);
 
 			sourceCore.visible = false;
-			sourceAura.visible = false;
+			sourceGlow.visible = false;
+			sourceRing.visible = false;
 
 			function resetGame() {
 				initData();
+
 				ENERGY_SOURCE.x = 0;
 				ENERGY_SOURCE.y = 0;
 				ENERGY_SOURCE.z = 0;
+				ENERGY_VELOCITY = 0;
+				PREV_ENERGY_SOURCE_X = 0;
+				PREV_ENERGY_SOURCE_Z = 0;
+				swarmFullRatio = 0.0;
+				overchargeFactor = 0.0;
+
 				sourceCore.position.set(0, 0, 0);
-				sourceAura.position.set(0, 0, 0);
+				sourceGlow.position.set(0, 0, 0);
+				sourceRing.position.set(0, 0, 0);
+				sourceCore.scale.setScalar(1);
+				sourceGlow.scale.setScalar(1);
+				sourceRing.scale.setScalar(1);
 
 				gameTimeLeft = 60.0;
 				winConditionTimer = 0.0;
@@ -460,21 +594,22 @@
 				currentGameState = "PLAYING";
 				elMainMenu.classList.add("hidden");
 				elHud.classList.remove("hidden");
-
 				controls.autoRotate = false;
 				sourceCore.visible = true;
-				sourceAura.visible = true;
+				sourceGlow.visible = true;
+				sourceRing.visible = true;
 			}
 
 			function endGame(result) {
 				currentGameState = result;
 				elHud.classList.add("hidden");
-				elEndScreen.classList.remove("hidden");
-				elEndScreen.className = `overlay ${result.toLowerCase()}`;
+				elEndScreen.classList.remove("hidden", "win", "loss");
+				elEndScreen.classList.add(result.toLowerCase());
 
 				controls.autoRotate = true;
 				sourceCore.visible = false;
-				sourceAura.visible = false;
+				sourceGlow.visible = false;
+				sourceRing.visible = false;
 				keysDown.clear();
 
 				if (result === "WIN") {
@@ -482,73 +617,94 @@
 					elEndSubtitle.innerText = `You completed the objective with ${gameTimeLeft.toFixed(1)}s remaining.`;
 				} else {
 					elEndTitle.innerText = "Swarm Starved!";
-					elEndSubtitle.innerText =
-						"Time ran out before 90% of the swarm was fed.";
+					elEndSubtitle.innerText = "Time ran out before 90% of the swarm was fed.";
 				}
 			}
 
+			function repairParticle(i3, i) {
+				pos[i3] = ENERGY_SOURCE.x + (Math.random() - 0.5) * 50;
+				pos[i3 + 1] = ENERGY_SOURCE.y + (Math.random() - 0.5) * 50;
+				pos[i3 + 2] = ENERGY_SOURCE.z + (Math.random() - 0.5) * 50;
+
+				vel[i3] = 0.0;
+				vel[i3 + 1] = 0.0;
+				vel[i3 + 2] = 0.0;
+
+				energy[i] = 0.5;
+				states[i] = 0;
+			}
+
 			function updateSimulation(dt) {
-				// Player Input
-				const moveSpeed = 400 * dt;
+				const safeDt = Math.min(dt, 0.05);
+				const moveSpeed = 400 * safeDt;
+
 				if (keysDown.has("w")) ENERGY_SOURCE.z -= moveSpeed;
 				if (keysDown.has("s")) ENERGY_SOURCE.z += moveSpeed;
 				if (keysDown.has("a")) ENERGY_SOURCE.x -= moveSpeed;
 				if (keysDown.has("d")) ENERGY_SOURCE.x += moveSpeed;
 
-				// Bounds constrain
-				ENERGY_SOURCE.x = Math.max(
-					-600,
-					Math.min(600, ENERGY_SOURCE.x),
-				);
-				ENERGY_SOURCE.z = Math.max(
-					-600,
-					Math.min(600, ENERGY_SOURCE.z),
-				);
+				ENERGY_SOURCE.x = Math.max(-600, Math.min(600, ENERGY_SOURCE.x));
+				ENERGY_SOURCE.z = Math.max(-600, Math.min(600, ENERGY_SOURCE.z));
 
-				sourceCore.position.set(
-					ENERGY_SOURCE.x,
-					ENERGY_SOURCE.y,
-					ENERGY_SOURCE.z,
-				);
-				sourceAura.position.set(
-					ENERGY_SOURCE.x,
-					ENERGY_SOURCE.y,
-					ENERGY_SOURCE.z,
-				);
+				sourceCore.position.set(ENERGY_SOURCE.x, ENERGY_SOURCE.y, ENERGY_SOURCE.z);
+				sourceGlow.position.set(ENERGY_SOURCE.x, ENERGY_SOURCE.y, ENERGY_SOURCE.z);
+				sourceRing.position.set(ENERGY_SOURCE.x, ENERGY_SOURCE.y, ENERGY_SOURCE.z);
 
-				// Spatial Hashing
+				const sourceDx = ENERGY_SOURCE.x - PREV_ENERGY_SOURCE_X;
+				const sourceDz = ENERGY_SOURCE.z - PREV_ENERGY_SOURCE_Z;
+				const sourceSpeed = Math.sqrt(sourceDx * sourceDx + sourceDz * sourceDz) / Math.max(safeDt, 0.0001);
+				const targetVFX = Math.min(sourceSpeed / 400.0, 1.0);
+
+				ENERGY_VELOCITY += (targetVFX - ENERGY_VELOCITY) * 0.15;
+
+				PREV_ENERGY_SOURCE_X = ENERGY_SOURCE.x;
+				PREV_ENERGY_SOURCE_Z = ENERGY_SOURCE.z;
+
 				gridHead.fill(-1);
 				for (let i = 0; i < N; i++) {
-					let gx = Math.floor((pos[i * 3] + 600) / CELL),
-						gy = Math.floor((pos[i * 3 + 1] + 600) / CELL),
-						gz = Math.floor((pos[i * 3 + 2] + 600) / CELL);
+					let gx = Math.floor((pos[i * 3] + 600) / CELL);
+					let gy = Math.floor((pos[i * 3 + 1] + 600) / CELL);
+					let gz = Math.floor((pos[i * 3 + 2] + 600) / CELL);
+
 					gx = Math.max(0, Math.min(GRID_RES - 1, gx));
 					gy = Math.max(0, Math.min(GRID_RES - 1, gy));
 					gz = Math.max(0, Math.min(GRID_RES - 1, gz));
+
 					const idx = gx + gy * GRID_RES + gz * GRID_RES * GRID_RES;
 					nextPtr[i] = gridHead[idx];
 					gridHead[idx] = i;
 				}
 
-				let hungryCount = 0,
-					fullCount = 0;
+				let hungryCount = 0;
+				let fullCount = 0;
 
 				for (let i = 0; i < N; i++) {
 					const i3 = i * 3;
-					const px = pos[i3],
-						py = pos[i3 + 1],
-						pz = pos[i3 + 2];
-					const vx = vel[i3],
-						vy = vel[i3 + 1],
-						vz = vel[i3 + 2];
+
+					const invalid =
+						!Number.isFinite(pos[i3]) ||
+						!Number.isFinite(pos[i3 + 1]) ||
+						!Number.isFinite(pos[i3 + 2]) ||
+						!Number.isFinite(vel[i3]) ||
+						!Number.isFinite(vel[i3 + 1]) ||
+						!Number.isFinite(vel[i3 + 2]) ||
+						Math.abs(pos[i3]) > 1500 ||
+						Math.abs(pos[i3 + 1]) > 1500 ||
+						Math.abs(pos[i3 + 2]) > 1500;
+
+					if (invalid) repairParticle(i3, i);
+
+					const px = pos[i3];
+					const py = pos[i3 + 1];
+					const pz = pos[i3 + 2];
+					const vx = vel[i3];
+					const vy = vel[i3 + 1];
+					const vz = vel[i3 + 2];
 
 					const toCenterX = ENERGY_SOURCE.x - px;
 					const toCenterY = ENERGY_SOURCE.y - py;
 					const toCenterZ = ENERGY_SOURCE.z - pz;
-					const distToCenter =
-						Math.sqrt(
-							toCenterX ** 2 + toCenterY ** 2 + toCenterZ ** 2,
-						) + 0.1;
+					const distToCenter = Math.sqrt(toCenterX * toCenterX + toCenterY * toCenterY + toCenterZ * toCenterZ) + 0.1;
 
 					if (distToCenter < CHARGE_RADIUS) {
 						energy[i] += 0.015;
@@ -559,87 +715,71 @@
 
 					if (energy[i] > 0.95) states[i] = 1;
 					if (energy[i] < 0.2) states[i] = 0;
+
 					if (states[i] === 0) hungryCount++;
 					else fullCount++;
 
-					let sX = 0,
-						sY = 0,
-						sZ = 0,
-						sCount = 0;
-					let aX = 0,
-						aY = 0,
-						aZ = 0,
-						aCount = 0;
-					let cX = 0,
-						cY = 0,
-						cZ = 0,
-						cCount = 0;
+					let sX = 0, sY = 0, sZ = 0, sCount = 0;
+					let aX = 0, aY = 0, aZ = 0, aCount = 0;
+					let cX = 0, cY = 0, cZ = 0, cCount = 0;
 
-					let gx = Math.floor((px + 600) / CELL),
-						gy = Math.floor((py + 600) / CELL),
-						gz = Math.floor((pz + 600) / CELL);
-					for (let x = -1; x <= 1; x++)
-						for (let y = -1; y <= 1; y++)
+					const gx = Math.floor((px + 600) / CELL);
+					const gy = Math.floor((py + 600) / CELL);
+					const gz = Math.floor((pz + 600) / CELL);
+
+					for (let x = -1; x <= 1; x++) {
+						for (let y = -1; y <= 1; y++) {
 							for (let z = -1; z <= 1; z++) {
-								const ni =
-									gx +
-									x +
-									(gy + y) * GRID_RES +
-									(gz + z) * GRID_RES * GRID_RES;
-								if (ni >= 0 && ni < GRID_RES ** 3) {
-									let head = gridHead[ni];
-									while (head !== -1) {
-										if (head !== i) {
-											const h3 = head * 3;
-											const dx = px - pos[h3],
-												dy = py - pos[h3 + 1],
-												dz = pz - pos[h3 + 2];
-											const dSq =
-												dx * dx + dy * dy + dz * dz;
+								const nx = gx + x;
+								const ny = gy + y;
+								const nz = gz + z;
 
-											if (
-												dSq > 0.0001 &&
-												dSq <
-													PARAMS.sepDist *
-														PARAMS.sepDist
-											) {
-												const d = Math.sqrt(dSq);
-												const push =
-													(PARAMS.sepDist - d) / d;
-												sX += dx * push;
-												sY += dy * push;
-												sZ += dz * push;
-												sCount++;
-											}
-											if (
-												dSq <
-												PARAMS.aliDist * PARAMS.aliDist
-											) {
-												aX += vel[h3];
-												aY += vel[h3 + 1];
-												aZ += vel[h3 + 2];
-												aCount++;
-											}
-											if (
-												dSq <
-													PARAMS.cohDist *
-														PARAMS.cohDist &&
-												states[head] === states[i]
-											) {
-												cX += pos[h3];
-												cY += pos[h3 + 1];
-												cZ += pos[h3 + 2];
-												cCount++;
-											}
+								if (nx < 0 || nx >= GRID_RES || ny < 0 || ny >= GRID_RES || nz < 0 || nz >= GRID_RES) {
+									continue;
+								}
+
+								const ni = nx + ny * GRID_RES + nz * GRID_RES * GRID_RES;
+								let head = gridHead[ni];
+
+								while (head !== -1) {
+									if (head !== i) {
+										const h3 = head * 3;
+										const dx = px - pos[h3];
+										const dy = py - pos[h3 + 1];
+										const dz = pz - pos[h3 + 2];
+										const dSq = dx * dx + dy * dy + dz * dz;
+
+										if (dSq > 0.0001 && dSq < PARAMS.sepDist * PARAMS.sepDist) {
+											const d = Math.sqrt(dSq);
+											const push = (PARAMS.sepDist - d) / d;
+											sX += dx * push;
+											sY += dy * push;
+											sZ += dz * push;
+											sCount++;
 										}
-										head = nextPtr[head];
+
+										if (dSq < PARAMS.aliDist * PARAMS.aliDist) {
+											aX += vel[h3];
+											aY += vel[h3 + 1];
+											aZ += vel[h3 + 2];
+											aCount++;
+										}
+
+										if (dSq < PARAMS.cohDist * PARAMS.cohDist && states[head] === states[i]) {
+											cX += pos[h3];
+											cY += pos[h3 + 1];
+											cZ += pos[h3 + 2];
+											cCount++;
+										}
 									}
+									head = nextPtr[head];
 								}
 							}
+						}
+					}
 
-					let fX = 0,
-						fY = 0,
-						fZ = 0;
+					let fX = 0, fY = 0, fZ = 0;
+
 					if (sCount > 0) {
 						fX += sX * 0.8;
 						fY += sY * 0.8;
@@ -672,32 +812,34 @@
 					vel[i3] += fX;
 					vel[i3 + 1] += fY;
 					vel[i3 + 2] += fZ;
-					const speed = Math.sqrt(
-						vel[i3] ** 2 + vel[i3 + 1] ** 2 + vel[i3 + 2] ** 2,
-					);
+
+					const speed = Math.sqrt(vel[i3] * vel[i3] + vel[i3 + 1] * vel[i3 + 1] + vel[i3 + 2] * vel[i3 + 2]);
 					if (speed > PARAMS.maxSpeed) {
 						vel[i3] = (vel[i3] / speed) * PARAMS.maxSpeed;
 						vel[i3 + 1] = (vel[i3 + 1] / speed) * PARAMS.maxSpeed;
 						vel[i3 + 2] = (vel[i3 + 2] / speed) * PARAMS.maxSpeed;
 					}
+
 					pos[i3] += vel[i3];
 					pos[i3 + 1] += vel[i3 + 1];
 					pos[i3 + 2] += vel[i3 + 2];
 				}
 
-				// Timers & Logic
-				gameTimeLeft -= dt;
-				const fullRatio = fullCount / N;
+				gameTimeLeft -= safeDt;
+				swarmFullRatio = fullCount / N;
 
-				if (fullRatio >= 0.9) {
-					winConditionTimer += dt;
+				if (swarmFullRatio >= 0.9) {
+					winConditionTimer += safeDt;
 				} else {
 					winConditionTimer = 0;
 				}
 
-				// UI Throttle
+				const winPressure = THREE.MathUtils.clamp((swarmFullRatio - 0.82) / 0.18, 0, 1);
+				const timerPressure = THREE.MathUtils.clamp(winConditionTimer / 5.0, 0, 1);
+				overchargeFactor += ((winPressure * 0.65 + timerPressure * 0.35) - overchargeFactor) * 0.08;
+
 				if (Math.random() < 0.1) {
-					elStateLog.innerHTML = `Seekers: ${hungryCount}<br>Wanderers: ${fullCount} (${(fullRatio * 100).toFixed(1)}%)`;
+					elStateLog.innerHTML = `Seekers: ${hungryCount}<br>Wanderers: ${fullCount} (${(swarmFullRatio * 100).toFixed(1)}%)`;
 					elTimeText.innerText = `Time: ${Math.max(0, gameTimeLeft).toFixed(1)}s`;
 					elTimerBar.style.width = `${Math.max(0, (gameTimeLeft / 60) * 100)}%`;
 
@@ -707,10 +849,7 @@
 						elWinProgress.innerText = "";
 					}
 
-					if (
-						gameTimeLeft <= 10 &&
-						!elTimerBar.classList.contains("timer-warning")
-					) {
+					if (gameTimeLeft <= 10 && !elTimerBar.classList.contains("timer-warning")) {
 						elTimerBar.classList.add("timer-warning");
 						elTimeText.classList.add("timer-warning-text");
 					}
@@ -728,6 +867,15 @@
 			velAttr.needsUpdate = true;
 			engAttr.needsUpdate = true;
 
+			const fogColorBase = new THREE.Color(0x050811);
+			const fogColorMid = new THREE.Color(0x12183d);
+			const fogColorFull = new THREE.Color(0x401028);
+
+			const gridColorBase = new THREE.Color(0x1e293b);
+			const gridColorHot = new THREE.Color(0xff7a59);
+			const sourceColorCool = new THREE.Color(0x7df9ff);
+			const sourceColorHot = new THREE.Color(0xff9a5c);
+
 			function animate() {
 				requestAnimationFrame(animate);
 
@@ -736,24 +884,71 @@
 				lastTime = now;
 
 				if (currentGameState === "PLAYING") {
-					updateSimulation(Math.min(dt, 0.1)); // Cap dt to avoid huge jumps on tab pause
+					updateSimulation(dt);
+
 					posAttr.needsUpdate = true;
 					velAttr.needsUpdate = true;
 					engAttr.needsUpdate = true;
+
+					const fogT = Math.pow(swarmFullRatio, 1.5);
+					const fogBlend = new THREE.Color().lerpColors(fogColorBase, fogColorMid, fogT);
+					scene.fog.color.lerp(fogBlend.lerp(fogColorFull, overchargeFactor * 0.85), 0.08);
+
+					const bloomBase = 0.24 + swarmFullRatio * 0.14 + ENERGY_VELOCITY * 0.06;
+					bloomPass.strength = bloomBase + overchargeFactor * 0.14;
+					bloomPass.radius = 0.10 + overchargeFactor * 0.06;
+
+					customVFXPass.uniforms.amount.value = ENERGY_VELOCITY;
+					customVFXPass.uniforms.overdrive.value = overchargeFactor;
+
+					mat.uniforms.uSourcePos.value.set(ENERGY_SOURCE.x, ENERGY_SOURCE.y, ENERGY_SOURCE.z);
+
+					const pulse = 1.0 + Math.sin(now * 0.008) * (0.025 + overchargeFactor * 0.04);
+					const glowScale = 1.04 + ENERGY_VELOCITY * 0.04 + overchargeFactor * 0.06;
+					const ringScale = 1.02 + ENERGY_VELOCITY * 0.05 + overchargeFactor * 0.08;
+
+					sourceCore.scale.setScalar(pulse);
+					sourceGlow.scale.setScalar(glowScale + Math.sin(now * 0.006) * 0.015);
+					sourceRing.scale.setScalar(ringScale + Math.sin(now * 0.01) * 0.03);
+					sourceRing.rotation.z += 0.005 + ENERGY_VELOCITY * 0.01 + overchargeFactor * 0.012;
+
+					const sourceCol = new THREE.Color().lerpColors(sourceColorCool, sourceColorHot, 0.4 + overchargeFactor * 0.6);
+					sourceGlow.material.color.copy(sourceCol);
+					sourceGlow.material.opacity = 0.07 + ENERGY_VELOCITY * 0.04 + overchargeFactor * 0.05;
+
+					sourceRing.material.color.copy(sourceCol);
+					sourceRing.material.opacity = 0.10 + overchargeFactor * 0.08;
+
+					gridHelper.material.opacity = 0.10 + swarmFullRatio * 0.08 + overchargeFactor * 0.10;
+					const gridColor = new THREE.Color().lerpColors(
+						gridColorBase,
+						gridColorHot,
+						Math.min(1, swarmFullRatio * 0.45 + overchargeFactor * 0.55)
+					);
+					gridHelper.material.color.copy(gridColor);
+
+					scene.fog.density = 0.00016 + overchargeFactor * 0.00004;
 				}
-				// If MENU or END, Three.js instancing displays the frozen buffers,
-				// and OrbitControls slowly auto-rotates around them.
+
+				mat.uniforms.uTime.value = now * 0.001;
 
 				controls.update();
-				renderer.render(scene, camera);
+				composer.render();
 			}
 
 			animate();
 
 			window.addEventListener("resize", () => {
-				camera.aspect = window.innerWidth / window.innerHeight;
+				const width = window.innerWidth;
+				const height = window.innerHeight;
+
+				camera.aspect = width / height;
 				camera.updateProjectionMatrix();
-				renderer.setSize(window.innerWidth, window.innerHeight);
+
+				renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+				renderer.setSize(width, height);
+				composer.setSize(width, height);
+				bloomPass.setSize(width, height);
 			});
 		</script>
 	</body>
