@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 	<head>
 		<meta charset="UTF-8" />
-		<title>LuminaSwarm_Beta_Build_Ass5_Hardcore</title>
+		<title>LuminaSwarm_Feature_Complete_v1_0</title>
 		<style>
 			body {
 				margin: 0;
@@ -131,17 +131,67 @@
 				color: #ef4444 !important;
 				text-shadow: 0 0 5px #ef4444;
 			}
+			.control-legend {
+				display: grid;
+				grid-template-columns: repeat(3, 28px);
+				gap: 6px;
+				justify-content: center;
+				margin: 10px auto 14px;
+			}
+			.key-cap {
+				border: 1px solid #00e5ff;
+				border-radius: 4px;
+				padding: 4px 0;
+				font-size: 12px;
+				color: #fff;
+				background: rgba(0, 229, 255, 0.1);
+				min-width: 28px;
+				text-align: center;
+			}
+			.key-cap.empty {
+				visibility: hidden;
+			}
+			.win-progress-hot {
+				color: #ffffff !important;
+				animation: winPulse 0.8s ease-in-out infinite alternate;
+				text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+			}
+			@keyframes winPulse {
+				from {
+					opacity: 0.7;
+				}
+				to {
+					opacity: 1;
+				}
+			}
 		</style>
 	</head>
 	<body>
 		<div id="main-menu" class="overlay">
 			<h1>LuminaSwarm</h1>
-			<p>Beta Build: Advanced VFX & Robust Systems</p>
+			<p>Feature Complete v1.0</p>
 			<div style="color: #aaa; margin-bottom: 30px; text-align: center; line-height: 1.5;">
-				Use <strong style="color: #fff">WASD</strong> to move the Energy Source.<br />
+				Use <strong style="color: #fff">WASD</strong> to move the Energy Source and mouse drag to rotate camera.<br />
 				Feed 90% of the swarm for 5 seconds to win.<br />
 				You have 60 seconds.
 			</div>
+			<div class="control-legend" aria-label="Control legend">
+				<div class="key-cap empty">.</div>
+				<div class="key-cap">W</div>
+				<div class="key-cap empty">.</div>
+				<div class="key-cap">A</div>
+				<div class="key-cap">S</div>
+				<div class="key-cap">D</div>
+			</div>
+			<div style="color: #aaa; margin-bottom: 16px; font-size: 12px;">Mouse Drag: Orbit Camera</div>
+			<label for="quality-select" style="color: #d500f9; margin-bottom: 6px;">Quality</label>
+			<select
+				id="quality-select"
+				style="margin-bottom: 22px; background: #091124; color: #fff; border: 1px solid #00e5ff; padding: 6px 10px; font-family: Consolas, monospace;"
+			>
+				<option value="high" selected>High (Default)</option>
+				<option value="low">Low</option>
+			</select>
 			<button id="start-btn">Initialize Simulation</button>
 		</div>
 
@@ -153,7 +203,7 @@
 
 		<div id="hud" class="hidden">
 			<h3 style="margin: 0 0 10px 0; color: #d500f9; text-shadow: 0 0 10px #d500f9;">System HUD</h3>
-			<div class="highlight">Agents: 2,000 Units (VFX Opt)</div>
+			<div id="agent-count" class="highlight">Agents: 2,000 Units (High)</div>
 			<div class="grade-point">Goal: 90% fed for 5s</div>
 			<div id="time-text" style="margin-top: 15px; font-weight: bold; font-size: 1.2em;">Time: 60.0s</div>
 			<div id="timer-container"><div id="timer-bar"></div></div>
@@ -178,26 +228,33 @@
 			import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 			import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 
-			const N = 2000;
+			const MAX_AGENTS = 2000;
+			const LOW_QUALITY_AGENT_CAP = 1000;
+			const GRID_SIZE = 2000;
+			const GRID_HALF_EXTENT = GRID_SIZE * 0.5;
+			const SOURCE_DAMP_RANGE = GRID_HALF_EXTENT * 0.15;
+			let qualityMode = "high";
+			let N = MAX_AGENTS;
 			const ENERGY_SOURCE = { x: 0, y: 0, z: 0 };
 			let ENERGY_VELOCITY = 0;
 			let PREV_ENERGY_SOURCE_X = 0;
 			let PREV_ENERGY_SOURCE_Z = 0;
 			let swarmFullRatio = 0.0;
 			let overchargeFactor = 0.0;
+			let lastFeedSfxTime = 0;
 
 			const CHARGE_RADIUS = 220.0;
 
-			const pos = new Float32Array(N * 3);
-			const vel = new Float32Array(N * 3);
-			const energy = new Float32Array(N);
-			const states = new Int8Array(N);
-			const seeds = new Float32Array(N);
+			const pos = new Float32Array(MAX_AGENTS * 3);
+			const vel = new Float32Array(MAX_AGENTS * 3);
+			const energy = new Float32Array(MAX_AGENTS);
+			const states = new Int8Array(MAX_AGENTS);
+			const seeds = new Float32Array(MAX_AGENTS);
 
 			const GRID_RES = 30;
 			const CELL = 1200 / GRID_RES;
 			const gridHead = new Int32Array(GRID_RES ** 3);
-			const nextPtr = new Int32Array(N);
+			const nextPtr = new Int32Array(MAX_AGENTS);
 
 			const PARAMS = {
 				maxSpeed: 4.5,
@@ -221,6 +278,8 @@
 			const elTimeText = document.getElementById("time-text");
 			const elStateLog = document.getElementById("state-log");
 			const elWinProgress = document.getElementById("win-progress");
+			const elAgentCount = document.getElementById("agent-count");
+			const elQualitySelect = document.getElementById("quality-select");
 
 			window.addEventListener("keydown", (e) => keysDown.add(e.key.toLowerCase()));
 			window.addEventListener("keyup", (e) => keysDown.delete(e.key.toLowerCase()));
@@ -241,6 +300,10 @@
 				sourceCore.visible = false;
 				sourceGlow.visible = false;
 				sourceRing.visible = false;
+			});
+			elQualitySelect.addEventListener("change", (e) => {
+				qualityMode = e.target.value === "low" ? "low" : "high";
+				updateAgentHud();
 			});
 
 			elMainMenu.addEventListener("mousedown", (e) => e.stopPropagation());
@@ -270,6 +333,9 @@
 
 			const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 5000);
 			camera.position.set(500, 300, 700);
+			const audioListener = new THREE.AudioListener();
+			camera.add(audioListener);
+			const audioContext = audioListener.context;
 
 			const renderer = new THREE.WebGLRenderer({ powerPreference: "high-performance", antialias: true });
 			renderer.setSize(window.innerWidth, window.innerHeight);
@@ -354,7 +420,7 @@
 			controls.autoRotate = true;
 			controls.autoRotateSpeed = 0.45;
 
-			const gridHelper = new THREE.GridHelper(2000, 40, 0x00e5ff, 0x1e293b);
+			const gridHelper = new THREE.GridHelper(GRID_SIZE, 40, 0x00e5ff, 0x1e293b);
 			gridHelper.position.y = -400;
 			gridHelper.material.transparent = true;
 			gridHelper.material.opacity = 0.14;
@@ -525,6 +591,12 @@
 				new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1.0 })
 			);
 			scene.add(sourceCore);
+			const sourceHumAudio = new THREE.PositionalAudio(audioListener);
+			sourceHumAudio.setRefDistance(90);
+			sourceHumAudio.setRolloffFactor(1.2);
+			sourceHumAudio.setDistanceModel("inverse");
+			sourceHumAudio.setMaxDistance(1500);
+			sourceCore.add(sourceHumAudio);
 
 			const sourceGlow = new THREE.Mesh(
 				new THREE.SphereGeometry(42, 24, 24),
@@ -555,7 +627,110 @@
 			sourceGlow.visible = false;
 			sourceRing.visible = false;
 
+			const ambientAudio = new THREE.Audio(audioListener);
+			const feedSfxAudio = new THREE.Audio(audioListener);
+			const winSfxAudio = new THREE.Audio(audioListener);
+			const lossSfxAudio = new THREE.Audio(audioListener);
+
+			function createToneBuffer(durationSeconds, frequencies, gainScale) {
+				const sampleRate = audioContext.sampleRate;
+				const frameCount = Math.floor(durationSeconds * sampleRate);
+				const buffer = audioContext.createBuffer(1, frameCount, sampleRate);
+				const channel = buffer.getChannelData(0);
+
+				for (let i = 0; i < frameCount; i++) {
+					const t = i / sampleRate;
+					let sample = 0;
+					for (let k = 0; k < frequencies.length; k++) {
+						sample += Math.sin(Math.PI * 2 * frequencies[k] * t) * (1 / (k + 1));
+					}
+					channel[i] = sample * gainScale;
+				}
+
+				return buffer;
+			}
+
+			function createAmbientBuffer(durationSeconds) {
+				const sampleRate = audioContext.sampleRate;
+				const frameCount = Math.floor(durationSeconds * sampleRate);
+				const buffer = audioContext.createBuffer(1, frameCount, sampleRate);
+				const channel = buffer.getChannelData(0);
+
+				for (let i = 0; i < frameCount; i++) {
+					const t = i / sampleRate;
+					const lowA = Math.sin(Math.PI * 2 * 42 * t) * 0.12;
+					const lowB = Math.sin(Math.PI * 2 * 57 * t) * 0.08;
+					const shimmer = Math.sin(Math.PI * 2 * 210 * t) * 0.02 * (0.5 + 0.5 * Math.sin(t * 0.65));
+					channel[i] = (lowA + lowB + shimmer) * 0.55;
+				}
+
+				return buffer;
+			}
+
+			function initAudioAssets() {
+				if (!ambientAudio.buffer) {
+					ambientAudio.setBuffer(createAmbientBuffer(6.0));
+					ambientAudio.setLoop(true);
+					ambientAudio.setVolume(0.22);
+				}
+				if (!sourceHumAudio.buffer) {
+					sourceHumAudio.setBuffer(createToneBuffer(1.8, [96, 128], 0.22));
+					sourceHumAudio.setLoop(true);
+					sourceHumAudio.setVolume(0.15);
+				}
+				if (!feedSfxAudio.buffer) {
+					feedSfxAudio.setBuffer(createToneBuffer(0.14, [880, 1320, 1760], 0.18));
+					feedSfxAudio.setLoop(false);
+					feedSfxAudio.setVolume(0.22);
+				}
+				if (!winSfxAudio.buffer) {
+					winSfxAudio.setBuffer(createToneBuffer(0.42, [660, 990, 1320], 0.16));
+					winSfxAudio.setLoop(false);
+					winSfxAudio.setVolume(0.36);
+				}
+				if (!lossSfxAudio.buffer) {
+					lossSfxAudio.setBuffer(createToneBuffer(0.48, [300, 220, 160], 0.20));
+					lossSfxAudio.setLoop(false);
+					lossSfxAudio.setVolume(0.34);
+				}
+			}
+
+			function stopOneShot(audio) {
+				if (audio.isPlaying) {
+					audio.stop();
+				}
+			}
+
+			function stopAllAudio() {
+				stopOneShot(feedSfxAudio);
+				stopOneShot(winSfxAudio);
+				stopOneShot(lossSfxAudio);
+				if (ambientAudio.isPlaying) ambientAudio.stop();
+				if (sourceHumAudio.isPlaying) sourceHumAudio.stop();
+			}
+
+			function updateAgentHud() {
+				elAgentCount.innerText = `Agents: ${N.toLocaleString()} Units (${qualityMode === "low" ? "Low" : "High"})`;
+			}
+
+			function applyQualitySettings() {
+				N = qualityMode === "low" ? LOW_QUALITY_AGENT_CAP : MAX_AGENTS;
+				instGeo.instanceCount = N;
+				bloomPass.enabled = qualityMode !== "low";
+				if (qualityMode === "low") {
+					bloomPass.strength = 0.0;
+					bloomPass.radius = 0.0;
+				}
+				updateAgentHud();
+			}
+
 			function resetGame() {
+				pos.fill(0);
+				vel.fill(0);
+				energy.fill(0);
+				states.fill(0);
+				seeds.fill(0);
+				nextPtr.fill(0);
 				initData();
 
 				ENERGY_SOURCE.x = 0;
@@ -566,6 +741,7 @@
 				PREV_ENERGY_SOURCE_Z = 0;
 				swarmFullRatio = 0.0;
 				overchargeFactor = 0.0;
+				lastFeedSfxTime = 0;
 
 				sourceCore.position.set(0, 0, 0);
 				sourceGlow.position.set(0, 0, 0);
@@ -587,9 +763,22 @@
 				elTimerBar.style.width = "100%";
 				elTimeText.innerText = "Time: 60.0s";
 				elWinProgress.innerText = "";
+				elWinProgress.classList.remove("win-progress-hot");
+
+				customVFXPass.uniforms.amount.value = 0.0;
+				customVFXPass.uniforms.overdrive.value = 0.0;
+				if (qualityMode === "high") {
+					bloomPass.strength = 0.42;
+					bloomPass.radius = 0.16;
+				} else {
+					bloomPass.strength = 0.0;
+					bloomPass.radius = 0.0;
+				}
+				stopAllAudio();
 			}
 
 			function startGame() {
+				applyQualitySettings();
 				resetGame();
 				currentGameState = "PLAYING";
 				elMainMenu.classList.add("hidden");
@@ -598,6 +787,11 @@
 				sourceCore.visible = true;
 				sourceGlow.visible = true;
 				sourceRing.visible = true;
+				initAudioAssets();
+				audioContext.resume().then(() => {
+					if (!ambientAudio.isPlaying) ambientAudio.play();
+					if (!sourceHumAudio.isPlaying) sourceHumAudio.play();
+				});
 			}
 
 			function endGame(result) {
@@ -611,6 +805,15 @@
 				sourceGlow.visible = false;
 				sourceRing.visible = false;
 				keysDown.clear();
+				stopOneShot(feedSfxAudio);
+
+				if (result === "WIN") {
+					stopOneShot(winSfxAudio);
+					winSfxAudio.play();
+				} else {
+					stopOneShot(lossSfxAudio);
+					lossSfxAudio.play();
+				}
 
 				if (result === "WIN") {
 					elEndTitle.innerText = "Swarm Synthesized!";
@@ -637,14 +840,27 @@
 			function updateSimulation(dt) {
 				const safeDt = Math.min(dt, 0.05);
 				const moveSpeed = 400 * safeDt;
+				const boundaryLimit = GRID_HALF_EXTENT;
 
-				if (keysDown.has("w")) ENERGY_SOURCE.z -= moveSpeed;
-				if (keysDown.has("s")) ENERGY_SOURCE.z += moveSpeed;
-				if (keysDown.has("a")) ENERGY_SOURCE.x -= moveSpeed;
-				if (keysDown.has("d")) ENERGY_SOURCE.x += moveSpeed;
+				let inputX = 0;
+				let inputZ = 0;
+				if (keysDown.has("w")) inputZ -= 1;
+				if (keysDown.has("s")) inputZ += 1;
+				if (keysDown.has("a")) inputX -= 1;
+				if (keysDown.has("d")) inputX += 1;
 
-				ENERGY_SOURCE.x = Math.max(-600, Math.min(600, ENERGY_SOURCE.x));
-				ENERGY_SOURCE.z = Math.max(-600, Math.min(600, ENERGY_SOURCE.z));
+				function boundaryDamp(coord, direction) {
+					if (direction === 0) return 1.0;
+					const distToEdge = direction > 0 ? boundaryLimit - coord : coord + boundaryLimit;
+					if (distToEdge >= SOURCE_DAMP_RANGE) return 1.0;
+					return THREE.MathUtils.clamp(distToEdge / SOURCE_DAMP_RANGE, 0.12, 1.0);
+				}
+
+				ENERGY_SOURCE.x += inputX * moveSpeed * boundaryDamp(ENERGY_SOURCE.x, inputX);
+				ENERGY_SOURCE.z += inputZ * moveSpeed * boundaryDamp(ENERGY_SOURCE.z, inputZ);
+
+				ENERGY_SOURCE.x = Math.max(-boundaryLimit, Math.min(boundaryLimit, ENERGY_SOURCE.x));
+				ENERGY_SOURCE.z = Math.max(-boundaryLimit, Math.min(boundaryLimit, ENERGY_SOURCE.z));
 
 				sourceCore.position.set(ENERGY_SOURCE.x, ENERGY_SOURCE.y, ENERGY_SOURCE.z);
 				sourceGlow.position.set(ENERGY_SOURCE.x, ENERGY_SOURCE.y, ENERGY_SOURCE.z);
@@ -677,6 +893,7 @@
 
 				let hungryCount = 0;
 				let fullCount = 0;
+				let feedingTransitions = 0;
 
 				for (let i = 0; i < N; i++) {
 					const i3 = i * 3;
@@ -713,8 +930,10 @@
 					}
 					energy[i] = Math.max(0.0, Math.min(1.0, energy[i]));
 
+					const prevState = states[i];
 					if (energy[i] > 0.95) states[i] = 1;
 					if (energy[i] < 0.2) states[i] = 0;
+					if (prevState === 0 && states[i] === 1) feedingTransitions++;
 
 					if (states[i] === 0) hungryCount++;
 					else fullCount++;
@@ -827,6 +1046,18 @@
 
 				gameTimeLeft -= safeDt;
 				swarmFullRatio = fullCount / N;
+				if (sourceHumAudio.buffer) {
+					sourceHumAudio.setVolume(0.10 + swarmFullRatio * 0.35);
+					sourceHumAudio.setPlaybackRate(0.9 + swarmFullRatio * 0.25);
+				}
+				if (feedingTransitions > 0) {
+					const nowTime = performance.now();
+					if (nowTime - lastFeedSfxTime > 70) {
+						stopOneShot(feedSfxAudio);
+						feedSfxAudio.play();
+						lastFeedSfxTime = nowTime;
+					}
+				}
 
 				if (swarmFullRatio >= 0.9) {
 					winConditionTimer += safeDt;
@@ -848,6 +1079,8 @@
 					} else {
 						elWinProgress.innerText = "";
 					}
+					const closeToGoal = swarmFullRatio >= 0.86 || winConditionTimer > 0;
+					elWinProgress.classList.toggle("win-progress-hot", closeToGoal);
 
 					if (gameTimeLeft <= 10 && !elTimerBar.classList.contains("timer-warning")) {
 						elTimerBar.classList.add("timer-warning");
@@ -863,6 +1096,7 @@
 			}
 
 			initData();
+			applyQualitySettings();
 			posAttr.needsUpdate = true;
 			velAttr.needsUpdate = true;
 			engAttr.needsUpdate = true;
@@ -894,9 +1128,14 @@
 					const fogBlend = new THREE.Color().lerpColors(fogColorBase, fogColorMid, fogT);
 					scene.fog.color.lerp(fogBlend.lerp(fogColorFull, overchargeFactor * 0.85), 0.08);
 
-					const bloomBase = 0.24 + swarmFullRatio * 0.14 + ENERGY_VELOCITY * 0.06;
-					bloomPass.strength = bloomBase + overchargeFactor * 0.14;
-					bloomPass.radius = 0.10 + overchargeFactor * 0.06;
+					if (qualityMode === "high") {
+						const bloomBase = 0.24 + swarmFullRatio * 0.14 + ENERGY_VELOCITY * 0.06;
+						bloomPass.strength = bloomBase + overchargeFactor * 0.14;
+						bloomPass.radius = 0.10 + overchargeFactor * 0.06;
+					} else {
+						bloomPass.strength = 0.0;
+						bloomPass.radius = 0.0;
+					}
 
 					customVFXPass.uniforms.amount.value = ENERGY_VELOCITY;
 					customVFXPass.uniforms.overdrive.value = overchargeFactor;
