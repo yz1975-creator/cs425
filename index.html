@@ -1059,7 +1059,7 @@
 					}
 				}
 
-				if (swarmFullRatio >= 0.9) {
+				if (swarmFullRatio >= 0.6) {
 					winConditionTimer += safeDt;
 				} else {
 					winConditionTimer = 0;
@@ -1088,7 +1088,7 @@
 					}
 				}
 
-				if (winConditionTimer >= 5.0) {
+				if (winConditionTimer >= 1.0) {
 					endGame("WIN");
 				} else if (gameTimeLeft <= 0) {
 					endGame("LOSS");
