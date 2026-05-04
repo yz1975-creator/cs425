@@ -172,7 +172,7 @@
 			<p>Feature Complete v1.0</p>
 			<div style="color: #aaa; margin-bottom: 30px; text-align: center; line-height: 1.5;">
 				Use <strong style="color: #fff">WASD</strong> to move the Energy Source and mouse drag to rotate camera.<br />
-				Feed 90% of the swarm for 5 seconds to win.<br />
+				Feed 60% of the swarm for 2 seconds to win.<br />
 				You have 60 seconds.
 			</div>
 			<div class="control-legend" aria-label="Control legend">
@@ -204,7 +204,7 @@
 		<div id="hud" class="hidden">
 			<h3 style="margin: 0 0 10px 0; color: #d500f9; text-shadow: 0 0 10px #d500f9;">System HUD</h3>
 			<div id="agent-count" class="highlight">Agents: 2,000 Units (High)</div>
-			<div class="grade-point">Goal: 90% fed for 5s</div>
+			<div class="grade-point">Goal: 60% fed for 2s</div>
 			<div id="time-text" style="margin-top: 15px; font-weight: bold; font-size: 1.2em;">Time: 60.0s</div>
 			<div id="timer-container"><div id="timer-bar"></div></div>
 			<div id="state-log" style="margin-top: 15px; font-size: 11px; color: #aaa;"></div>
@@ -820,7 +820,7 @@
 					elEndSubtitle.innerText = `You completed the objective with ${gameTimeLeft.toFixed(1)}s remaining.`;
 				} else {
 					elEndTitle.innerText = "Swarm Starved!";
-					elEndSubtitle.innerText = "Time ran out before 90% of the swarm was fed.";
+					elEndSubtitle.innerText = "Time ran out before 60% of the swarm was fed.";
 				}
 			}
 
@@ -1065,8 +1065,8 @@
 					winConditionTimer = 0;
 				}
 
-				const winPressure = THREE.MathUtils.clamp((swarmFullRatio - 0.82) / 0.18, 0, 1);
-				const timerPressure = THREE.MathUtils.clamp(winConditionTimer / 5.0, 0, 1);
+				const winPressure = THREE.MathUtils.clamp((swarmFullRatio - 0.52) / 0.08, 0, 1);
+				const timerPressure = THREE.MathUtils.clamp(winConditionTimer / 2.0, 0, 1);
 				overchargeFactor += ((winPressure * 0.65 + timerPressure * 0.35) - overchargeFactor) * 0.08;
 
 				if (Math.random() < 0.1) {
@@ -1075,11 +1075,11 @@
 					elTimerBar.style.width = `${Math.max(0, (gameTimeLeft / 60) * 100)}%`;
 
 					if (winConditionTimer > 0) {
-						elWinProgress.innerText = `Maintaining 90%: ${winConditionTimer.toFixed(1)}s / 5.0s`;
+						elWinProgress.innerText = `Maintaining 60%: ${winConditionTimer.toFixed(1)}s / 2.0s`;
 					} else {
 						elWinProgress.innerText = "";
 					}
-					const closeToGoal = swarmFullRatio >= 0.86 || winConditionTimer > 0;
+					const closeToGoal = swarmFullRatio >= 0.56 || winConditionTimer > 0;
 					elWinProgress.classList.toggle("win-progress-hot", closeToGoal);
 
 					if (gameTimeLeft <= 10 && !elTimerBar.classList.contains("timer-warning")) {
@@ -1088,7 +1088,7 @@
 					}
 				}
 
-				if (winConditionTimer >= 1.0) {
+				if (winConditionTimer >= 2.0) {
 					endGame("WIN");
 				} else if (gameTimeLeft <= 0) {
 					endGame("LOSS");
